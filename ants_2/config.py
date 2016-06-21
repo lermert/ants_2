@@ -60,3 +60,87 @@ class ConfigDownload(object):
         for key, value in data.iteritems():
             setattr(self, key, value)
 
+
+
+
+DEFAULT_Preprocess = {
+    "verbose":"true",
+    "testrun":"false",
+    "dirs_input":[],
+    "quality_minlengthsec":0.,
+    "quality_maxgapsec":0.,
+    "event_exclude":false,
+    "event_exclude_winsec":[],
+    "event_exclude_std":2.,
+    "event_exclude_n":4,
+    "event_exclude_freq":0.01,
+    "event_exclude_level":2.,
+    "wins":true,
+    "wins_len_sec":16384,
+    "wins_trim":true,
+    "wins_detrend":true,
+    "wins_demean":true,
+    "wins_taper":0.05,
+    "wins_cap":false,
+    "wins_cap_threshold":15,
+    "Fs_old":[],
+    "Fs_new":[],
+    "instr_correction":true,
+    "instr_correction_unit":'VEL',
+    "instr_correction_input":'resp',
+    "instr_correction_prefilt":[],
+    "instr_correction_waterlevel":0.,
+    
+}
+
+CONFIG_Preprocess = os.path.join('input','config_preprocess.json')
+
+class ConfigPreprocess(object):
+    """Contains basic parameters for the job (paths, etc.)"""
+
+    def __init__(self):
+        self.verbose = None
+        self.testrun = None
+        self.dirs_input = None
+        self.quality_minlengthsec = None
+        self.quality_maxgapsec = None
+        self.event_exclude = None
+        self.event_exclude_winsec = None
+        self.event_exclude_std = None
+        self.event_exclude_n = None
+        self.event_exclude_freq = None
+        self.event_exclude_leve = None
+        self.wins = None
+        self.wins_trim = None
+        self.wins_detrend = None
+        self.wins_demean = None
+        self.wins_taper = None
+        self.wins_cap = None
+        self.wins_cap_threshold = None
+        self.Fs_old = None
+        self.Fs_new = None
+        self.instr_correction = None
+        self.instr_correction_unit = None
+        self.instr_correction_input = None
+        self.instr_correction_prefilt= None
+        self.instr_correction_waterlevel = None
+        
+        
+        self.initialize()
+        
+    def initialize(self):
+        """Populates the class from ./config.json.
+        If ./config.json does not exist, writes a default file and exits.
+        """
+
+        if not os.path.exists(CONFIG_Preprocess):
+            with io.open(CONFIG_Preprocess, 'wb') as fh:
+                json.dump(DEFAULT_Preprocess, fh, sort_keys=True, indent=4, separators=(",", ": "))
+            return()
+
+        # Load all options.
+        with io.open(CONFIG_Preprocess, 'r') as fh:
+            data = json.load(fh)
+            print(data)
+        for key, value in data.iteritems():
+            setattr(self, key, value)

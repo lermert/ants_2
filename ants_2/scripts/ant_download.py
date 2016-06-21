@@ -15,40 +15,38 @@ from ants_2.config import ConfigDownload
 
 cfg = ConfigDownload()
 from .. import _ROOT
+from obspy.clients import fdsn
 
 
 def ant_download():
- #==============================================================================================
+ #===============================================================================
         # preliminaries
-        #==============================================================================================
+        #===============================================================================
         
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
     outdir = os.path.join('data','raw')
-    
-    #cfg = config#ConfigDownload()
-     
-         #===============================================================================
-        #- read in xmlinput
-        #- create output directory
-        #- create a list of input files
-        #===============================================================================
- 
-    # network, channel, location and station list
-    stalist=os.path.join('input','downloadlist.txt')
-    fh=open(stalist,'r')
-    ids=fh.read().split('\n')
-    
-    
-    #datadir=cfg.datadir
     targetloc=os.path.join(outdir,'rank'+str(rank))
-
-    
     if not os.path.isdir(targetloc):
         os.mkdir(targetloc)
+    respfileloc=os.path.join('meta','resp')
+    if os.path.isdir(respfileloc)==False:
+        cmd='mkdir '+respfileloc
+        os.system(cmd)
     
+    if rank == 0:
+        client = fdsn.Client()
+         #===============================================================================
+        #- read station list
+        #- create output directory
+        #- set parameters #===============================================================================
  
+    # network, channel, location and station list
+    #stalist=cfg.ids#os.path.join('input','downloadlist.txt')
+    fh=open(cfg.ids,'r')
+    ids=fh.read().split('\n')
+    
     # Verbose?
     if cfg.verbose:
         v=True
@@ -80,9 +78,10 @@ def ant_download():
     lon_min=cfg.lon_min
     lon_max=cfg.lon_max
     
-    #==============================================================================================
-    #- Assign each rank its own chunk of input
-    #==============================================================================================
+    #===============================================================================
+    
+    #- Assign each rank its own chunk to download
+    #===============================================================================
     
     clen=int(float(len(ids))/float(size))
     chunk=(rank*clen, (rank+1)*clen)
@@ -91,14 +90,21 @@ def ant_download():
         myids=ids[chunk[0]:]
        
     
-    #==================================================================================
-    # Input files loop
-    #==================================================================================
+    #===============================================================================
+    
+    # Station loop
+    #===============================================================================
       
     for id in myids:
         
         if id=='': continue
+        network=id.split('.')[0]
+        station=id.split('.')[1]
+        channel=id.split('.')[3]
+         #===============================================================================
         
+        # Time window loop
+         #===============================================================================
         t = UTCDateTime(t1)
         while t < UTCDateTime(t2):
             
@@ -113,66 +119,89 @@ def ant_download():
             
             #-Formulate a polite request
             filename=os.path.join(targetloc,id+'.'+tstartstr+'.'+tstepstr+'.mseed')
-          
+            
+              
             if os.path.exists(filename)==False:
-                network=id.split('.')[0]
-                station=id.split('.')[1]
-                channel=id.split('.')[3]
+                
                 #print network, station, location, channel
-                print('\n Rank '+str(rank)+'\n',file=None)
-                print('\n Attempting to download data from: '+id+'\n',file=None)
-                print(filename,None)
+                print('\n Rank '+str(rank),file=None)
+                print('\n Attempting to download data from: '+id,file=None)
+                print(filename)
                 
                 reqstring_iris = '{} {} -N {} -S {} -C {} -s {} -e {} -msl {} --lat \
                 {}:{} --lon {}:{} -o {} -Q {}'.format(os.path.join(_ROOT,'tools_ext','FetchData')\
                 ,vfetchdata,network,station,channel,tstart,tstep,minlen,lat_min,lat_max,lon_min,\
                 lon_max,filename,quality)
                 
+                reqstring_arclink = '{} {} -N {} -S {} -C {} -s {} -e {} -msl {} --lat \
+                {}:{} --lon {}:{} -o {} -Q {}'.format(os.path.join(_ROOT,'tools_ext','FetchDataArc')\
+                ,vfetchdata,network,station,channel,tstart,tstep,minlen,lat_min,lat_max,lon_min,\
+                lon_max,filename,quality)
+                
+                
                 #reqstring=_ROOT+'/tools/FetchData '+vfetchdata+' -N '+network+ \
                 # ' -S '+station+' -C '+channel+' -s '+tstart+' -e '+tstep+ \
                 # ' -msl '+minlen+' --lat '+lat_min+':'+lat_max+ \
                 #' --lon '+lon_min+':'+lon_max+' -o '+filename+' -Q '+quality
-                  
-                os.system(reqstring_iris)
+                if cfg.data_center == 'iris' or cfg.data_center=='any':
+                    os.system(reqstring_iris)
+                elif cfg.data_center == 'arclink' or cfg.data_center=='any': 
+                    os.system(reqstring_arclink)
             t += winlen
-          
-     
-    # Clean up (some files come back with 0 data)
-    stafile=cfg.ids
-    t1s=t1str.split('.')[0]+'.'+t1str.split('.')[1]
-    t2s=t2str.split('.')[0]+'.'+t2str.split('.')[1]
-    
-    os.system('mv '+targetloc+'* '+targetloc+'/..')
-    os.system('rmdir '+targetloc)
-    
-    
-    # Download resp files for all epochs!
-    respfileloc=os.path.join('data','resp')
         
-    if os.path.isdir(respfileloc)==False:
-        cmd='mkdir '+respfileloc
-        os.system(cmd)
-    
-    
-    for id in myids:
-        if id=='': continue
-        
-        network=id.split('.')[0]
-        station=id.split('.')[1]
-        channel=id.split('.')[3]
-        
+        tstart = UTCDateTime(t1).strftime('%Y-%m-%d')
         print('\n Downloading response information from: '+id+'\n')
-        reqstring_resp = '{} {} -N {} -S {} -C {} --lat \
-        {}:{} --lon {}:{} -o {} -Q {}'.format(os.path.join(_ROOT,'tools_ext','FetchData'),vfetchdata,network\
-        ,station,channel,lat_min,lat_max,lon_min,\
+        
+        #===============================================================================
+        
+        # Within Station loop: Download resp files
+         #===============================================================================        
+        reqstring_resp_iris = '{} {} -N {} -S {} -C {} -s {} -e {} --lat \
+        {}:{} --lon {}:{} -rd {} -Q {}'.format(
+        os.path.join(_ROOT,'tools_ext','FetchData'),vfetchdata,network\
+        ,station,channel,tstart,tstep,lat_min,lat_max,lon_min,\
         lon_max,respfileloc,quality)
         
-        #reqstring=_ROOT+'/tools_ext/FetchData '+vfetchdata+' -N '+network+ ' -S '+station+' -C '+channel+\
-        #' --lat '+lat_min+':'+lat_max+' --lon '+lon_min+':'+lon_max+' -rd '+respfileloc
-        os.system(reqstring_resp)
+        reqstring_resp_arclink = '{} {} -N {} -S {} -C {} -s {} -e {} --lat \
+        {}:{} --lon {}:{} -rd {} -Q {}'.format(
+        os.path.join(_ROOT,'tools_ext','FetchDataArc'),vfetchdata,network\
+        ,station,channel,tstart,tstep,lat_min,lat_max,lon_min,\
+        lon_max,respfileloc,quality)
         
+        if cfg.data_center == 'iris' or cfg.data_center=='any':
+            os.system(reqstring_resp_iris)
+        elif cfg.data_center == 'arclink' or cfg.data_center=='any':
+            os.system(reqstring_resp_arclink)
+            
+        
+
+    # Clean up (some files come back with 0 data)
+    os.system(os.path.join(_ROOT,'tools','cleandir.sh')+' '+targetloc)
+    cmd = 'mv '+targetloc+'/* '+targetloc+'/..'
+    print(cmd)
+    os.system(cmd)
+    os.system('rmdir '+targetloc)
+
+        #===============================================================================
+        
+        # Separate Station loop: Download stationxml
+         #===============================================================================        
+    if rank == 0:
+        for id in ids:
+            network=id.split('.')[0]
+            station=id.split('.')[1]
+            xmlfile=os.path.join('meta','stationxml','{}.{}.xml'.format(network,station))
+            # Metadata request with obspy
+            if os.path.exists(xmlfile)==False:
+                client.get_stations(network=network,station=station,
+                filename=xmlfile,level='channel')        
+
     comm.Barrier()
-    
+ #===============================================================================
+ 
+     # After download completed on all ranks: Check availability
+  #==============================================================================   
+ 
     
     if rank==0:
         outfile=os.path.join(outdir,'download_report.txt')
@@ -191,7 +220,9 @@ def ant_download():
         
         for id in ids:
             if id=='': continue
-            fls=glob(outdir+'*')
+           
+            fls=glob(os.path.join(outdir,id+'*'))
+           
             if fls != []:
                 print('Files downloaded for id: '+id,file=outf)
                 print('First file: '+fls[0],file=outf)
@@ -210,5 +241,7 @@ def ant_download():
         print('****************************************** \n',file=outf)
         outf.close()
         
-        os.system('cat '+'input'+'/config_download.json >> '+outfile)
+        os.system('cat input/config_download.json >> '+outfile)
+    
+    return()
             
