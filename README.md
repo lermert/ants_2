@@ -4,7 +4,7 @@ Download, process and correlate continuous data
 
 After cloning, everything should be set up by running:
 
-pip install -v .
+pip install -v -e .
 
 in the ants_2 directory. This should also check for the necessary dependencies.
 
