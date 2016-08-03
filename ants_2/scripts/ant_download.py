@@ -188,13 +188,14 @@ def ant_download():
          #===============================================================================        
     if rank == 0:
         for id in ids:
+            if id=='': continue
             network=id.split('.')[0]
             station=id.split('.')[1]
             xmlfile=os.path.join('meta','stationxml','{}.{}.xml'.format(network,station))
             # Metadata request with obspy
             if os.path.exists(xmlfile)==False:
                 client.get_stations(network=network,station=station,
-                filename=xmlfile,level='channel')        
+                filename=xmlfile,level='response')        
 
     comm.Barrier()
  #===============================================================================

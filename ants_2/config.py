@@ -69,23 +69,23 @@ DEFAULT_Preprocess = {
     "dirs_input":[],
     "quality_minlengthsec":0.,
     "quality_maxgapsec":0.,
-    "event_exclude":false,
+    "event_exclude":"false",
     "event_exclude_winsec":[],
     "event_exclude_std":2.,
     "event_exclude_n":4,
     "event_exclude_freq":0.01,
     "event_exclude_level":2.,
-    "wins":true,
+    "wins":"true",
     "wins_len_sec":16384,
-    "wins_trim":true,
-    "wins_detrend":true,
-    "wins_demean":true,
+    "wins_trim":"true",
+    "wins_detrend":"true",
+    "wins_demean":"true",
     "wins_taper":0.05,
-    "wins_cap":false,
+    "wins_cap":"false",
     "wins_cap_threshold":15,
     "Fs_old":[],
     "Fs_new":[],
-    "instr_correction":true,
+    "instr_correction":"true",
     "instr_correction_unit":'VEL',
     "instr_correction_input":'resp',
     "instr_correction_prefilt":[],
@@ -118,7 +118,7 @@ class ConfigPreprocess(object):
         self.wins_cap = None
         self.wins_cap_threshold = None
         self.Fs_old = None
-        self.Fs_new = None
+        self.Fs_new = mNone
         self.instr_correction = None
         self.instr_correction_unit = None
         self.instr_correction_input = None
