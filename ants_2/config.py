@@ -6,7 +6,7 @@ import click
 
 
 DEFAULT_Download = {
-    "verbose":"true",
+    "verbose":True,
     "data_center":"any",
     "data_user":"hugo.bruno.kunz@gmail.com",
     "ids":"input/downloadlist.txt",
@@ -64,28 +64,30 @@ class ConfigDownload(object):
 
 
 DEFAULT_Preprocess = {
-    "verbose":"true",
-    "testrun":"false",
-    "dirs_input":[],
+    "verbose":True,
+    "testrun":False,
+    "input_dirs":[],
+    "input_format":"MSEED",
     "quality_minlengthsec":0.,
     "quality_maxgapsec":0.,
-    "event_exclude":"false",
+    "event_exclude":False,
     "event_exclude_winsec":[],
     "event_exclude_std":2.,
     "event_exclude_n":4,
     "event_exclude_freq":0.01,
     "event_exclude_level":2.,
-    "wins":"true",
-    "wins_len_sec":16384,
-    "wins_trim":"true",
-    "wins_detrend":"true",
-    "wins_demean":"true",
+    "wins":False,
+    "wins_len_sec":8192,
+    "wins_trim":True,
+    "wins_detrend":True,
+    "wins_demean":True,
     "wins_taper":0.05,
-    "wins_cap":"false",
+    "wins_cap":False,
     "wins_cap_threshold":15,
     "Fs_old":[],
     "Fs_new":[],
-    "instr_correction":"true",
+    "Fs_antialias_factor":0.4,
+    "instr_correction":True,
     "instr_correction_unit":'VEL',
     "instr_correction_input":'resp',
     "instr_correction_prefilt":[],
@@ -101,15 +103,19 @@ class ConfigPreprocess(object):
     def __init__(self):
         self.verbose = None
         self.testrun = None
-        self.dirs_input = None
+        self.input_dirs = None
+        self.input_format = None
+        
         self.quality_minlengthsec = None
         self.quality_maxgapsec = None
+        
         self.event_exclude = None
         self.event_exclude_winsec = None
         self.event_exclude_std = None
         self.event_exclude_n = None
         self.event_exclude_freq = None
-        self.event_exclude_leve = None
+        self.event_exclude_level = None
+        
         self.wins = None
         self.wins_trim = None
         self.wins_detrend = None
@@ -117,8 +123,11 @@ class ConfigPreprocess(object):
         self.wins_taper = None
         self.wins_cap = None
         self.wins_cap_threshold = None
+        
         self.Fs_old = None
-        self.Fs_new = mNone
+        self.Fs_new = None
+        self.Fs_antialias_factor = None
+        
         self.instr_correction = None
         self.instr_correction_unit = None
         self.instr_correction_input = None
@@ -127,6 +136,8 @@ class ConfigPreprocess(object):
         
         
         self.initialize()
+        
+        
         
     def initialize(self):
         """Populates the class from ./config.json.
@@ -144,3 +155,8 @@ class ConfigPreprocess(object):
             print(data)
         for key, value in data.iteritems():
             setattr(self, key, value)
+        
+        # Make sure freqs. for downsampling are in descending order.
+        self.Fs_new.sort() # Now in ascending order
+        self.Fs_new=self.Fs_new[::-1] # Now in descending order
+        

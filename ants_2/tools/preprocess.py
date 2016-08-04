@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from numpy import isnan, isinf
 from scipy.signal import sosfilt
-from obspy import Trace, Inventory
+from obspy import Stream, Inventory
 
 # cfg should not be known here.
 #from ants_2.config import ConfigPreprocess
@@ -10,11 +10,11 @@ from obspy import Trace, Inventory
 
 class Preprocess(object):
     
-    def __init__(self,trace,verbose,ofid):
+    def __init__(self,stream,verbose,ofid):
         
-        self.trace = trace
-        if not isinstance(self.trace,Trace):
-            msg = "trace must be an obspy trace object."
+        self.stream = stream
+        if not isinstance(self.stream,Stream):
+            msg = "stream must be an obspy stream object."
             raise TypeError(msg)
         self.verbose = verbose
         self.ofid = ofid
@@ -23,27 +23,30 @@ class Preprocess(object):
     
     def check_nan_inf(self):
         """
-        Check if trace contains nan, inf
+        Check if trace contains nan, inf and takes them out of the stream
         """
-        #- check NaN
-        if True in isnan(self.trace.data):
-            if self.verbose: print('** trace contains NaN, discarded',\
-            file=self.ofid)
-            return False
-                    
-        #- check infinity
-        if True in isinf(self.trace.data):
-            if self.verbose: print('** trace contains infinity, discarded',\
-            file=self.ofid)
-            return False
-                    
-        if self.verbose: 
-            print('* number of points: '+str(self.
-            trace.stats.npts)+\
-        '\n',file=self.ofid)
-        
-        return True
-
+    
+        for i in range(len(self.stream)):
+            
+            #- check NaN
+            if True in isnan(self.stream[i].data):
+                if self.verbose: 
+                    print('** trace contains NaN, discarded',\
+                file=self.ofid)
+                
+                del_trace = self.stream.pop(i)
+                print(del_trace,file=self.ofid)
+                continue
+                        
+            #- check infinity
+            if True in isinf(self.stream[i].data):
+                if self.verbose: print('** trace contains infinity, discarded',\
+                file=self.ofid)
+                
+                del_trace = self.stream.pop(i)
+                print(del_trace,file=self.ofid)
+                continue
+               
 
     def detrend(self):
         """
@@ -53,10 +56,9 @@ class Preprocess(object):
         if self.verbose:
             print('* detrend\n',file=self.ofid)
         
-        self.trace.detrend('linear')
+        self.stream.detrend('linear')
     
-        return True
-
+    
 
     def demean(self):
         """
@@ -66,59 +68,72 @@ class Preprocess(object):
         if self.verbose: 
             print('* demean\n',file=self.ofid)
         
-        self.trace.detrend('demean')
+        self.stream.detrend('demean')
 
-        return True
+       
     
-    def downsampling(self,zerophase_antialias=False):
+    def taper(self,perc):
+        
+        if self.verbose:
+            print('* tapering\n',file=self.ofid)
+            
+        self.stream.taper(type='cosine',max_percentage=perc)
+    
+    def downsampling(self,Fs_new,sos_aa,zerophase_antialias=False):
         
         
         # Apply antialias filter
-        if zerophase_antialias:
-            firstpass = sosfilt(self.trace.sos_aa,self.trace.data)
-            self.trace.data = sosfilt(self.trace.sos_aa,firstpass[::-1])[::-1]
-        else:
-            self.trace.data = sosfilt(self.trace.sos_aa,self.trace.data)
+        
+        for trace in self.stream:
+        
+            if zerophase_antialias:
+                firstpass = sosfilt(sos_aa,trace.data)
+                trace.data = sosfilt(sos_aa,firstpass[::-1])[::-1]
+            else:
+                trace.data = sosfilt(sos_aa,trace.data)
         
         # Decimate if possible, otherwise interpolate
-        for i in range(len(self.trace.Fs_new)):
+        for i in range(len(Fs_new)):
             
-            if self.trace.stats.Fs % self.trace.Fs_new[i] == 0:
-                dec = int(self.trace.stats.Fs / self.trace.Fs_new[i])
-                self.trace.decimate(dec, no_filter=True, strict_length=False)
+            Fs_old = self.stream[0].stats.sampling_rate
+            Fs = Fs_new[i]
+            
+            if Fs_old % Fs == 0:
+                dec = int( Fs_old / Fs)
+                self.stream.decimate(dec, no_filter=True, strict_length=False)
                 if self.verbose:
-                    print('* decimated trace to %g Hz' %self.trace.Fs_new[i],
+                    print('* decimated traces to %g Hz' %Fs,
                     file=self.ofid)
             else:
                 try:
-                    self.trace.interpolate(sampling_rate = self.trace.Fs_new[i],
+                    self.stream.interpolate(sampling_rate = Fs,
                     method='lanczos')
-                    print('* interpolated trace to %g Hz' %self.trace.Fs_new[i],
+                    print('* interpolated traces to %g Hz' %Fs,
                     file=self.ofid)
                 except:
-                    self.trace.interpolate(sampling_rate = self.trace.Fs_new[i])
-                    print('* interpolated trace to %g Hz' %self.trace.Fs_new[i],
+                    self.stream.interpolate(sampling_rate = Fs)
+                    print('* interpolated trace to %g Hz' %Fs,
                     file=self.ofid)
-        return True
+       
             
    
     
-    def remove_response(self,**kwargs):
+    def remove_response(self,inv,pre_filt,**kwargs):
         
         """
         kwargs: Will be passed to obspy simulate or remove_response: water_level, taper,
         taper_fraction, plot, output
         """
         
-        if isinstance(self.trace.inv,dict):
-            self.trace.simulate(paz_remove=None,pre_filt=self.trace.pre_filt,
-            seedresp=self.trace.inv,sacsim=True,pitsasim=False,**kwargs)
+        if isinstance(self.stream.inv,dict):
+            self.stream.simulate(paz_remove=None,pre_filt=pre_filt,
+            seedresp=inv,sacsim=True,pitsasim=False,**kwargs)
             if self.verbose:
                 print('* removed instrument response using seedresp',file=self.ofid)
                 
-        elif isinstance(self.trace.inv,Inventory):
-            self.trace.remove_response(inventory=self.trace.inv,
-            pre_filt=self.trace.pre_filt,**kwargs)
+        elif isinstance(self.stream.inv,Inventory):
+            self.stream.remove_response(inventory=inv,
+            pre_filt=pre_filt,**kwargs)
             if self.verbose:
                 print('* removed instrument response using staxml inv',file=self.ofid)
                 
@@ -126,5 +141,6 @@ class Preprocess(object):
             msg = 'No inventory or seedresp found.'
             raise ValueError(msg)
         
-        return True
-            
+        
+    
+    

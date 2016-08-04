@@ -49,3 +49,10 @@ input/config_download.json')
 def par_download():
     from scripts.ant_download import ant_download
     ant_download()
+
+@run.command(help='Instrument correction and other preprocessing.')
+def par_preprocess():
+    from scripts.ant_preprocess import Preprocessing
+    P = Preprocessing()
+    P.preprocess()
+    
