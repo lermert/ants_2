@@ -1,10 +1,15 @@
 from __future__ import print_function
 import os
-import ants_2.tools.prepare as pp
 
 import numpy as np
+# Can comment plt out if you are not going to use testrun
+import matplotlib.pyplot as plt
+
+import ants_2.tools.prepare as pp
+from ants_2.tools.bookkeep import name_processed_file
 from obspy import Stream, read, read_inventory, Inventory
 from scipy.signal import cheb2ord, cheby2, zpk2sos
+
 
 class PrepStream(object):
 
@@ -21,8 +26,19 @@ class PrepStream(object):
 
 
 
-	def write(self):
-		pass
+	def write(self,cfg):
+
+		for trace in self.stream:
+
+            fnew = name_processed_file(
+            	trace.stats,
+            	startonly=False)
+            trace.write(fnew,
+            	format=trace.stats._format)
+                       
+            if cfg.verbose:
+                print('* renamed file: '+fnew,file=self.ofid)
+        return True
 
 	def prepare(self,cfg):
 
@@ -47,6 +63,22 @@ class PrepStream(object):
 				cfg.wins_len_sec,cfg.quality_minlensec,
 				cfg.verbose,self.ofid)
 
+		if cfg.testrun:
+			# Retain only one, randomly selected part of the stream
+			sel_ind = np.random.randint(0,len(self.stream),1)[0]
+			self.stream = Stream(self.stream[sel_ind])
+
+		return True
+
+
+		
+
+	def process(self,cfg):
+
+		# Preparatory steps
+		if cfg.testrun: 
+			teststream = self.stream.copy()
+			testtitle = ['Raw data']
 
 		Fs = self.stream[0].stats.sampling_rate
 
@@ -55,14 +87,14 @@ class PrepStream(object):
 				cfg.Fs_antialias_factor)
 
 		if cfg.instr_correction:
-
-			#self.pre_filt = cfg.instr_correction_prefilt
 			self.add_inv(cfg.instr_correction_input)
 
-	def process(self,cfg):
-		
 		self.check_nan_inf(cfg.verbose)
+		if len(self.stream) == 0: return False
 
+
+
+		# Processing proper
 		if cfg.wins_detrend:
 			self.detrend(cfg.verbose)
 
@@ -80,9 +112,16 @@ class PrepStream(object):
 				cfg.verbose
 				)
 
-		Fs = self.stream[0].stats.sampling_rate
+		if cfg.testrun:
+			teststream += self.stream.copy()
+			testtitle.append('After detrend, event exclusion')
+
 		if Fs > cfg.Fs_new[-1]:
 			self.downsampling(cfg.verbose)
+
+		if cfg.testrun:
+			teststream += self.stream.copy()
+			testtitle.append('After antialias, downsampling')
 
 		if cfg.instr_correction:
 			self.remove_response(
@@ -91,9 +130,41 @@ class PrepStream(object):
 				cfg.instr_correction_unit,
 				cfg.verbose)
 
+		if cfg.testrun:
+			teststream += self.stream.copy()
+			testtitle.append('After instrument correction')
+			self.plot_test(teststream, testtitle)
+
+		self.check_nan_inf(cfg.verbose)
+		self.stream._cleanup()
+
+		if len(self.stream) == 0:
+			return False
+		else:
+			return True
 
 
-	
+
+	def plot_test(self,stream,titles):
+
+		# I am a bit unhappy with having this plotting thing here..
+		try: 
+			os.mkdir('test')
+		except:
+			pass
+
+		fig_name = stream[0].id + '.testplot.png'
+		fig = plt.figure()
+
+		for i in range(4):
+			ax = plt.add_subplot(4,1,i)
+			ax.plot(stream[i].data)
+			ax.set_title(titles[i])
+
+		plt.savefig(os.path.join('test',fig_name),format='png')
+
+
+
 
 	def add_inv(self,input):
 
@@ -106,7 +177,6 @@ class PrepStream(object):
 			file = os.path.join('meta','stationxml',file)
 
 			self.inv = read_inventory(file)
-
 
 
 		elif input == 'resp':
@@ -122,6 +192,10 @@ class PrepStream(object):
 		else:
 			msg = 'input must be \'resp\' or \'staxml\''
 			raise ValueError(msg)
+
+
+
+
 
 	def add_antialias(self,Fs,freq):
 		# From obspy
@@ -144,6 +218,8 @@ class PrepStream(object):
 		antialias = cheby2(order, rs, wn, 
 			btype='low', analog=0, output='zpk')
 		self.antialias = zpk2sos(antialias)
+
+
 
 
 	def check_nan_inf(self,verbose):
@@ -172,6 +248,8 @@ class PrepStream(object):
 			    del_trace = self.stream.pop(i)
 			    print(del_trace,file=self.ofid)
 			    continue 
+
+
 
 	def cap_glitches(trace,cfg):
 		pass
@@ -264,6 +342,7 @@ class PrepStream(object):
 		            self.stream.interpolate(sampling_rate = Fs)
 		            print('* interpolated trace to %g Hz' %Fs,
 		            file=self.ofid)
+
 
 
 

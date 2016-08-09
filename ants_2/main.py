@@ -52,7 +52,6 @@ def par_download():
 
 @run.command(help='Instrument correction and other preprocessing.')
 def par_preprocess():
-    from scripts.ant_preprocess import Preprocessing
-    P = Preprocessing()
-    P.preprocess()
+    from scripts.ant_preprocess import preprocess
+    preprocess()
     

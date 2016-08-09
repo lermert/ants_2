@@ -2,7 +2,7 @@ import os
 from glob import glob
 from obspy import read
 
-def find_rawdata_files(indirs, format):
+def find_raw_files(indirs, format):
         
     
     content=list()
@@ -16,7 +16,7 @@ def find_rawdata_files(indirs, format):
     
     return content
 
-def name_procdata_file(stats,startonly=False):
+def name_processed_file(stats,startonly=False):
     
     inf = [
         stats.network,
@@ -42,31 +42,31 @@ def name_procdata_file(stats,startonly=False):
     
  
         
-def read_data(filepath,ofid,verbose):
+# def read_data(filepath,ofid,verbose):
     
-    if verbose:
-        print('===========================================================',\
-        file=ofid)
-        print('* opening file: '+filepath+'\n',file=ofid)
+#     if verbose:
+#         print('===========================================================',\
+#         file=ofid)
+#         print('* opening file: '+filepath+'\n',file=ofid)
         
-    #- read data
-    try:
-        data=read(filepath)
+#     #- read data
+#     try:
+#         data=read(filepath)
 
-    except (TypeError, IOError):
-        if verbose: 
-            print('** file wrong type or not found, skip.',
-            file=ofid)
-        return []
-    except:
-        if cfg.verbose: 
-            print('** unexpected read error, skip.',
-            file=ofid)
-        return []
+#     except (TypeError, IOError):
+#         if verbose: 
+#             print('** file wrong type or not found, skip.',
+#             file=ofid)
+#         return []
+#     except:
+#         if cfg.verbose: 
+#             print('** unexpected read error, skip.',
+#             file=ofid)
+#         return []
         
-    #- check if this file contains data
-    if len(data) == 0:
-        print('** file contains no data, skip.',file=ofid)
-        return []
+#     #- check if this file contains data
+#     if len(data) == 0:
+#         print('** file contains no data, skip.',file=ofid)
+#         return []
     
     return data
