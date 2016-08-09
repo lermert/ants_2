@@ -161,6 +161,9 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
     Such events will be replaced by zero with the sides tapered.
     Operates directly on the trace.
     """
+    if trace.stats.npts == 0:
+        return()
+
     weight = np.ones(trace.stats.npts)
     windows.sort() # make sure ascending order
 
@@ -233,7 +236,7 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
     # percentage of data that was cut:
     pctg_cut=float(np.sum(weight==0.))/float(trace.stats.npts)*100
     # display a summary of how much was kept 
-    if verbose:
+    if verbose and pctg_cut > 0:
         print('cut %g percent of data from trace: ' 
             %pctg_cut,file=ofid)
         print(trace.id,file=ofid)

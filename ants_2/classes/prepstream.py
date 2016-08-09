@@ -40,8 +40,8 @@ class PrepStream(object):
 			           
 			if cfg.verbose:
 				print('* renamed file: '+fnew,file=self.ofid)
-		return True
-
+		return()
+		
 	def prepare(self,cfg):
 
 # Tasks:
@@ -55,22 +55,31 @@ class PrepStream(object):
 		self.stream = pp.merge_traces(self.stream,
 			cfg.Fs_old,5,maxgap=cfg.quality_maxgapsec)
 
+		if len(self.stream) == 0:
+			return()
+
 		if cfg.quality_trimfullsec:
 			self.stream = pp.trim_next_sec(self.stream,
 				cfg.verbose,self.ofid)
+		if len(self.stream) == 0:
+			return()
 
 
 		if cfg.wins:
 			self.stream = pp.slice_traces(self.stream,
 				cfg.wins_len_sec,cfg.quality_minlensec,
 				cfg.verbose,self.ofid)
+		if len(self.stream) == 0:
+			return()
 
 		if cfg.testrun:
 			# Retain only one, randomly selected part of the stream
 			sel_ind = np.random.randint(0,len(self.stream),1)[0]
 			self.stream = Stream(self.stream[sel_ind])
+		
+		return()
 
-		return True
+		
 
 
 		
@@ -92,7 +101,7 @@ class PrepStream(object):
 			self.add_inv(cfg.instr_correction_input)
 
 		self.check_nan_inf(cfg.verbose)
-		if len(self.stream) == 0: return False
+		if len(self.stream) == 0: return()
 
 
 
@@ -140,10 +149,7 @@ class PrepStream(object):
 		self.check_nan_inf(cfg.verbose)
 		self.stream._cleanup()
 
-		if len(self.stream) == 0:
-			return False
-		else:
-			return True
+		return()
 
 
 

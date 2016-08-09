@@ -94,23 +94,23 @@ def preprocess():
             print('** %s' %filepath,file=ofid)
             continue
         
-        success = prstr.prepare(cfg)
-
-        if not success:
+        try:
+            prstr.prepare(cfg)
+        except:
             print('** Problems preparing stream: ',file=ofid)
             print('** %s' %filepath,file=ofid)
             continue
             
-        success = prstr.process(cfg)
-
-        if not success:
+        try:
+            prstr.process(cfg)
+        except:
             print('** Problems processing stream: ',file=ofid)
             print('** %s' %filepath,file=ofid)
             continue
 
-        success = prstr.write(rankdir,cfg)
-
-        if not success:
+        try:
+            prstr.write(rankdir,cfg)
+        except:
             print('** Problems writing stream: ',file=ofid)
             print('** %s' %filepath,file=ofid)
 

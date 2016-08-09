@@ -1,4 +1,3 @@
-from __future__ import print_function
 import io
 import json
 import os
@@ -56,7 +55,7 @@ class ConfigDownload(object):
         # Load all options.
         with io.open(CONFIG_Download, 'r') as fh:
             data = json.load(fh)
-            print(data)
+            
         for key, value in data.iteritems():
             setattr(self, key, value)
 
@@ -152,7 +151,7 @@ class ConfigPreprocess(object):
         # Load all options.
         with io.open(CONFIG_Preprocess, 'r') as fh:
             data = json.load(fh)
-            print(data)
+            
         for key, value in data.iteritems():
             setattr(self, key, value)
         
