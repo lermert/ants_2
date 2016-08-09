@@ -32,12 +32,14 @@ def name_processed_file(stats,startonly=False):
     if startonly: 
         t2 = '*'
     
-    inf.append(t1,t2)
+    inf.append(t1)
+    inf.append(t2)
+
     
     
-    filenew = '{}.{}.{}.{}.{}.{}.{}'.format(inf)
+    filenew = '{}.{}.{}.{}.{}.{}.{}'.format(*inf)
     
-    return filepathnew
+    return filenew
             
     
  

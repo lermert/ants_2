@@ -4,11 +4,11 @@ from __future__ import print_function
 from mpi4py import MPI
 import os
 import sys
-#import time
+import time
 
 #from obspy import read, Stream,  Trace, UTCDateTime
 #from glob import glob
-
+from numpy.random import randint
 from ants_2.tools.bookkeep import find_raw_files
 from ants_2.config import ConfigPreprocess
 cfg = ConfigPreprocess()
@@ -48,7 +48,7 @@ def preprocess():
     rankdir = os.path.join(outdir,
         'rank_%g' %rank)
     if not os.path.exists(rankdir):
-        os.path.mkdir(rankdir)
+        os.mkdir(rankdir)
 
     
     #- Find input files
@@ -73,9 +73,14 @@ def preprocess():
         print(time.strftime('%Y.%m.%dT%H:%M'),file=ofid)
 
 
-    # Loop over input files
+    # select input files for this rank    
+    content = content[rank::size]
+    if cfg.testrun: # Only 3 files randomly selected
+        indices = randint(0,len(content),3)
+        content = [content[j] for j in indices]
 
-    for filepath in content[rank::size]:
+    # Loop over input files
+    for filepath in content:
         
         try:
             prstr = PrepStream(filepath,ofid)
@@ -103,7 +108,7 @@ def preprocess():
             print('** %s' %filepath,file=ofid)
             continue
 
-        success = prstr.write(cfg)
+        success = prstr.write(rankdir,cfg)
 
         if not success:
             print('** Problems writing stream: ',file=ofid)

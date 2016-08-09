@@ -26,19 +26,21 @@ class PrepStream(object):
 
 
 
-	def write(self,cfg):
+	def write(self,rdir,cfg):
 
 		for trace in self.stream:
 
-            fnew = name_processed_file(
-            	trace.stats,
-            	startonly=False)
-            trace.write(fnew,
-            	format=trace.stats._format)
-                       
-            if cfg.verbose:
-                print('* renamed file: '+fnew,file=self.ofid)
-        return True
+			fnew = name_processed_file(
+				trace.stats,
+				startonly=False)
+			fnew = os.path.join(rdir,fnew) 
+			
+			trace.write(fnew,
+				format=trace.stats._format)
+			           
+			if cfg.verbose:
+				print('* renamed file: '+fnew,file=self.ofid)
+		return True
 
 	def prepare(self,cfg):
 
@@ -157,7 +159,7 @@ class PrepStream(object):
 		fig = plt.figure()
 
 		for i in range(4):
-			ax = plt.add_subplot(4,1,i)
+			ax = fig.add_subplot(4,1,i+1)
 			ax.plot(stream[i].data)
 			ax.set_title(titles[i])
 
@@ -296,7 +298,7 @@ class PrepStream(object):
 			    	n_compare=cfg.event_exclude_n,
 			    	min_freq=cfg.event_exclude_freq,
 			    	factor_enrg=cfg.event_exclude_level,
-			    	taper_perc=cfg.event_exclude_taper,
+			    	taper_perc=cfg.wins_taper,
 			    	thresh_stdv=cfg.event_exclude_std,
 			    	ofid=self.ofid,
 			    	verbose=cfg.verbose)

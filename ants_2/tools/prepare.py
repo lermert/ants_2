@@ -45,7 +45,7 @@ def merge_traces(data, Fs, n_interp=0,maxgap=10.0, ofid=None):
 
             # add trace to respective list or create that list
             traces_dict.setdefault(trace.id, []).append(trace)
-            print(traces_dict)
+            
             
     except IndexError:
         pass
