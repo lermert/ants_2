@@ -39,8 +39,8 @@ def merge_traces(data, Fs, n_interp=0,maxgap=10.0, ofid=None):
             round(trace.stats.sampling_rate, 6)
             # Throw data with the wrong sampling rate out.
             if trace.stats.sampling_rate not in Fs:
-                print('Bad sampling rate: %g' 
-                %(trace.stats.sampling_rate), file=ofid)
+                print('Bad sampling rate: %g on trace %s' 
+                %(trace.stats.sampling_rate,trace.id), file=ofid)
                 continue
 
             # add trace to respective list or create that list
@@ -152,7 +152,7 @@ def slice_traces(data, len_sec, min_len_sec, verbose, ofid):
 
 
 
-def event_exclude(trace,windows,n_compare,min_freq,\
+def event_exclude(trace,windows,n_compare,freq_min,freq_max,\
 factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
 
     """
@@ -167,10 +167,14 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
     weight = np.ones(trace.stats.npts)
     windows.sort() # make sure ascending order
 
+    testtrace = trace.copy()
+    testtrace.taper(type='cosine',max_percentage = taper_perc)
+    testtrace.filter('bandpass',freqmin = freq_min,freqmax = freq_max,
+                      corners = 3, zerophase = True)
     # length of taper dep on minimum frequency that 
     # should be available
 
-    n_hann = int(trace.stats.sampling_rate / min_freq)
+    n_hann = int(trace.stats.sampling_rate / freq_min)
     tpr = hann(2*n_hann)
     
     for win in windows: 
@@ -184,7 +188,7 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
         t0 = trace.stats.starttime
         while t0 < trace.stats.endtime-win:
             
-            subtr = trace.slice(starttime=t0,endtime=t0+win-1).data
+            subtr = testtrace.slice(starttime=t0,endtime=t0+win-1).data
 
             enrg.append(np.sum(np.power(subtr,2))/win)
             subwin = int(win/3)

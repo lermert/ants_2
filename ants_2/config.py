@@ -73,7 +73,8 @@ DEFAULT_Preprocess = {
     "event_exclude_winsec":[],
     "event_exclude_std":2.,
     "event_exclude_n":4,
-    "event_exclude_freq":0.01,
+    "event_exclude_freqmin":0.01,
+    "event_exclude_freqmax":1.0,
     "event_exclude_level":2.,
     "wins":False,
     "wins_len_sec":8192,
@@ -112,7 +113,8 @@ class ConfigPreprocess(object):
         self.event_exclude_winsec = None
         self.event_exclude_std = None
         self.event_exclude_n = None
-        self.event_exclude_freq = None
+        self.event_exclude_freqmin = None
+        self.event_exclude_freqmax = None
         self.event_exclude_level = None
         
         self.wins = None

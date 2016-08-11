@@ -55,3 +55,7 @@ def par_preprocess():
     from scripts.ant_preprocess import preprocess
     preprocess()
     
+@run.command(help='Plot stations for which data is available.')
+def plot_stations():
+    from tools.plot import plot_stations
+    plot_stations()

@@ -65,11 +65,11 @@ def preprocess():
 
     if os.path.exists(output_file):
         ofid = open(output_file,'a')
-        print('PROCESSING, Date:',file=ofid)
+        print('UPDATING, Date:',file=ofid)
         print(time.strftime('%Y.%m.%dT%H:%M'),file=ofid)
     else:
         ofid = open(output_file,'w')
-        print('UPDATING, Date:',file=ofid)
+        print('PROCESSING, Date:',file=ofid)
         print(time.strftime('%Y.%m.%dT%H:%M'),file=ofid)
 
 
@@ -81,6 +81,10 @@ def preprocess():
 
     # Loop over input files
     for filepath in content:
+
+        print('-------------------------------------',file=ofid)
+        print('Attempting to process:',file=ofid)
+        print(os.path.basename(filepath),file=ofid)
         
         try:
             prstr = PrepStream(filepath,ofid)
@@ -128,74 +132,4 @@ def preprocess():
 
     os.system('rmdir '+rankdir)
             
-    # def getfilepath(self,rankdir,stats,startonly=False):
-        
-    #     inf = [
-    #         stats.network,
-    #     stats.station,
-    #     stats.location,
-    #     stats.channel,
-    #     stats._format
-    #     ]
-        
-            
-    #     t1=stats.starttime.strftime('%Y.%j.%H.%M.%S')
-    #     t2=stats.endtime.strftime('%Y.%j.%H.%M.%S')
-    #     if startonly: 
-    #         t2 = '*'
-        
-    #     inf.append(t1,t2)
-        
-    #     #yr=str(t1[0:4])
-        
-    #     filenew = '{}.{}.{}.{}.{}.{}.{}'.format(inf)
-    #     filepathnew = os.path.join(rankdir,filenew)
-    #     #filepathnew=rankdir+'/'+network+'.'+station+'.'+location+'.'+\
-    #     #channel+'.' + t1 + '.' +t2+'.'+prepname+'.'+format 
-        
-    #     return filepathnew
-            
     
-    # def find_rawdatafiles(self):
-        
-    #     indirs = cfg.input_dirs
-    #     format = cfg.input_format.lower()
-    #     content=list()
-    #     for indir in indirs:
-    #         print(indir)
-    #         content.extend(glob(os.path.join(indir,'*'+format)))
-    #         content.extend(glob(os.path.join(indir,'*'+format.upper())))
-            
-    #     content.sort()
-    #     print(content)
-    #     return content
-        
-    # def read_file(self,filepath,ofid):
-        
-    #     if cfg.verbose:
-    #         print('===========================================================',\
-    #         file=ofid)
-    #         print('* opening file: '+filepath+'\n',file=ofid)
-            
-    #     #- read data
-    #     try:
-    #         data=read(filepath)
-    #     except (TypeError, IOError):
-    #         if cfg.verbose==True: print('** file wrong type or not found, skip.',
-    #         file=ofid)
-    #         return []
-    #     except:
-    #         if cfg.verbose: print('** unexpected read error, skip.',
-    #         file=ofid)
-    #         return []
-            
-    #     #- check if this file contains data
-    #     if len(data) == 0:
-    #         print('** file contains no data, skip.',file=ofid)
-    #         return []
-        
-    #     return data
-    
-    
-    
-    # 

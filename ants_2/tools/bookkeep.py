@@ -22,8 +22,7 @@ def name_processed_file(stats,startonly=False):
         stats.network,
         stats.station,
         stats.location,
-        stats.channel,
-        stats._format
+        stats.channel
     ]
     
         
@@ -35,7 +34,7 @@ def name_processed_file(stats,startonly=False):
     inf.append(t1)
     inf.append(t2)
 
-    
+    inf.append(stats._format)
     
     filenew = '{}.{}.{}.{}.{}.{}.{}'.format(*inf)
     
