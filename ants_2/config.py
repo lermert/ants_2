@@ -164,12 +164,17 @@ class ConfigPreprocess(object):
 
 DEFAULT_Correlation = {
     "indirs": [],
-    "channels": [],
-    "channels_mix": False,
-    "time_start": "2000-01-01T00:00:00.0000",
+    "time_begin": "2000-01-01T00:00:00.0000",
     "time_end": "2001-01-01T00:00:00.0000",
+    "time_window_length":3600,
+    "time_overlap":0,
     "corr_type": "ccc",
-    "input_format": "MSEED"
+    "corr_tensorcomponents": ["ZZ"],
+    "n_stationpairs": 1,
+    "input_format": "MSEED",
+    "locations_mix": False,
+    "locations":[],
+    "update": False,
 }
 
 CONFIG_Correlation = os.path.join('input','config_correlation.json')
@@ -180,12 +185,19 @@ class ConfigCorrelation(object):
     def __init__(self):
         
         self.indirs = None
-        self.channels = None
-        self.channels_mix = None
-        self.time_start = None
+        
+        self.time_begin = None
         self.time_end = None
+        self.time_overlap = None
+        self.time_window_length = None
         self.corr_type = None
+        self.corr_tensorcomponents = None
         self.input_format = None
+        self.n_stationpairs = None
+        self.locations_mix = None
+        self.locations = None
+        self.update = None
+
 
         self.initialize()
 

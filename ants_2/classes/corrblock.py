@@ -1,9 +1,14 @@
 # Correlation block object:
-from obspy import Stream, Trace, read_inventory
+from obspy import Stream, Trace, read_inventory, UTCDateTime, read
 from obspy.geodetics import gps2dist_azimuth
+
 import numpy as np
 import os
 import re
+from glob import glob
+
+
+
 
 class CorrTrace(object):
 
@@ -27,7 +32,11 @@ class CorrTrace(object):
 
 		self.cnt_tot = 0
 		self.cnt_int = 0
+
 		geo_inf = self.get_geoinf()
+		
+			
+		
 
 		self.lat1 = geo_inf[0]
 		self.lat2 = geo_inf[2]
@@ -94,41 +103,70 @@ class CorrBlock(object):
 
 
 # - initialize with station pairs
-	def __init__(self,pairs,cfg):
+	def __init__(self,block,inv,cfg):
 
-# - figure out channel combinations
+		self.inv = inv
+		self.correlations = []
+		self.channels = []
 
-		self._correlations = []
-		
-		for p in pairs:
+		n_lag = 13
 
-			# if mix channels, 
-			for c in cfg.channels:
+		for pair in block:
+			try:
+				self.correlations.append(CorrTrace(pair[0],pair[1],
+				cfg.corr_type,n_lag))
+			except:
+				print('** Could not initialize correlation for %s,%s: check metadata'
+					%(pair[0],pair[1]))
+			
+			self.channels.append(pair[0])
+			self.channels.append(pair[1])
 
-				if cfg.channels_mix:
-					for k in channels:
-						cpairs.append([p[0]+'.'+c,p[1]+'.'+k])
-				else:
-					cpairs.append([p[0]+'.'+c,p[1]+'.'+c])
 
-		for p in cpair:
-			self._correlations.append(CorrTrace(p[0],p[1],cfg.corr_type))
-
+		self.channels = list(set(self.channels))
+		print(self.channels)
 		self.data = Stream()
+		self.initialize_data()
 
+		self.correlate(cfg)
 
 	def correlate(self,cfg):
 
-		t_0 = UTCDateTime(cfg.starttime)
-		t_end = UTCDateTime(cfg.starttime)
+		t_0 = UTCDateTime(cfg.time_begin)
+		t_end = UTCDateTime(cfg.time_end)
 
-		t = t_0
+		
 
-		while t <= t_end - cfg.win_len_sec:
+		self.initialize_data()
 
-			self.update_data(t, cfg.win_len_sec)
+		t = min(t0,self.data)
 
-			windows = self.stream.slice(t, t+win_len_sec)
+		while t <= t_end - cfg.time_window_length:
+
+			#self.update_data(t, cfg.win_len_sec)
+
+			windows = self.data.slice(t, t + cfg.time_window_length)
+			print(windows)
+
+			t += cfg.time_window_length - cfg.time_overlap
+
+
+
+	def initialize_data(self):
+		
+		for channel in self.channels:
+			
+			print(channel)
+			f = self.inv.data[channel].pop(0)
+			try:
+				self.data += read(f)
+			except IOError:
+				print('** problems reading file %s' 
+				%self.inv.data[channel])
+
+
+
+
 
 			#if 
 # - loop over the station pairs with n 'datatraces' (one per ID):
@@ -137,6 +175,8 @@ class CorrBlock(object):
 	# - check starttime, if necessary, add data from 'later' file
 	# - slice the traces
 	# - if horizontal components are involved, rotate them
+	# - check minimum length requirement
+	# - transform everything to FD?
 	# - correlate each relevant pair
 	# - add to stack
 	# - if window counter reaches n_intermediate_stack: save intermediate

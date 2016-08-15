@@ -9,7 +9,7 @@ import time
 #from obspy import read, Stream,  Trace, UTCDateTime
 #from glob import glob
 from numpy.random import randint
-from ants_2.tools.bookkeep import find_raw_files
+from ants_2.tools.bookkeep import find_files
 from ants_2.config import ConfigPreprocess
 cfg = ConfigPreprocess()
 from ants_2.classes.prepstream import PrepStream
@@ -53,7 +53,7 @@ def preprocess():
     
     #- Find input files
     
-    content = find_raw_files(cfg.input_dirs,
+    content = find_files(cfg.input_dirs,
         cfg.input_format)
        
 

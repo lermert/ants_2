@@ -3,12 +3,15 @@ from __future__ import print_function
 from mpi4py import MPI
 
 import os
-
+import time
 from ants_2.config import ConfigCorrelation
 cfg = ConfigCorrelation()
+from ants_2.classes.corrblock import CorrBlock
 
+import ants_2.tools.bookkeep as bk
 from obspy import UTCDateTime
 from glob import glob
+from copy import deepcopy
 # 'main':
 
 # - import modules
@@ -25,84 +28,9 @@ print("Size is %g" %size)
 
 
 
-class file_inventory(object):
-
-    """
-    For each station id, keep a dictionary of available files within the time range requested in cfg.
-    """
-
-    def __init__(self,cfg):
-
-        
-        indirs = cfg.indirs
-        t0 = UTCDateTime(cfg.time_start) 
-        t1 = UTCDateTime(cfg.time_end)
-        fileformat = cfg.input_format
-
-        self.get_processed_data(indirs,t0,t1,fileformat)
 
 
-    def get_processed_data(self,indirs,t0,t1,filefmt):
-        
-        files = []
-        self.data = {}
-        
-
-        for indir in indirs:
-            files.extend(glob(os.path.join(indir,'*.'+filefmt.lower())))
-            files.extend(glob(os.path.join(indir,'*.'+filefmt.upper())))
-            
-        
-        for f in files:
-            print(f)
-            fn = os.path.basename(f).split('.')
-            st = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[4:9]))
-            et = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[9:14]))
-            print(et)
-            if st > t1 or et < t0:
-                continue
-            else:
-
-                station = '{}.{}'.format(*fn[0:2])
-                channel = '{}.{}.{}.{}'.format(*fn[0:4])
-
-                if station not in self.data.keys():
-                    self.data[station] = {}
-
-                if channel not in self.data[station].keys():
-                    self.data[station][channel] = []
-
-                self.data[station][channel].append(f)
-
-        return()
-
-    def get_blocks(self,n):
-
-        # ToDo check if inventory already there?
-        staids = self.data.keys()
-        staids.sort()
-        # ToDo build in updating mode again?
-        blcks = []
-        idprs = []
-
-        n_ids = len(staids)
-        
-        for i in range(n_ids):
-            for j in range(i+1,n_ids):
-
-                if len(idprs) == n:
-                    blcks.append(idprs)
-                    idprs = []
-
-                idprs.append((staids[i],staids[j]))
-
-        if len(idprs) < n:
-            blcks.append(idprs)
-
-        return blcks
-
-
-def correlate():
+def correlate():    
   # Create output directory, if necessary
 
     outdir = os.path.join('data','processed')
@@ -111,6 +39,7 @@ def correlate():
         os.mkdir(outdir)
 
     comm.Barrier()
+
     # Create own output directory, if necessary
 
     rankdir = os.path.join(outdir,'rank_%g' %rank)
@@ -133,15 +62,19 @@ def correlate():
         print(time.strftime('%Y.%m.%dT%H:%M'),file=ofid)
 
 
-    # - get list of files available
+    # - get list of files available;
+    # - get blocks of channel pairs
 
-    content = file_inventory(cfg)
+    favail = bk.file_avail(cfg)
 
-    # - determine station pairs;
-
-    blocks  = content.get_blocks()
 
 # - LOOP over blocks:
+    
+    for b in favail.blocks[rank::size]:
+
+        favail_block = deepcopy(favail)
+        # initialize a block of correlations
+        c = CorrBlock(b,favail_block,cfg)
 
 # - block.correlate
  
