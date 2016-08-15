@@ -156,9 +156,9 @@ def event_exclude(trace,windows,n_compare,freq_min,freq_max,\
 factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
 
     """
-    A horrible, unelegant and complicated way to try and get rid of earthquakes and other high-energy bursts. 
-    A sort of coarse multiwindow-trigger.
-    Such events will be replaced by zero with the sides tapered.
+    A really somewhat complicated way to try and get rid of earthquakes and other high-energy bursts. 
+    A sort of coarse multiwindow-trigger; I haven't found a better (comparatively fast) way so far.
+    High-energy events will be replaced by zero with their sides tapered.
     Operates directly on the trace.
     """
     if trace.stats.npts == 0:
@@ -191,21 +191,27 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
             subtr = testtrace.slice(starttime=t0,endtime=t0+win-1).data
 
             enrg.append(np.sum(np.power(subtr,2))/win)
-            subwin = int(win/3)
-            [a,b,c] = [ np.std(subtr[0:subwin]),
-                        np.std(subtr[subwin:2*subwin]),
-                        np.std(subtr[2*subwin:3*subwin]) ]  
+            #subwin = int(win/3)
+            #[a,b,c] = [ np.std(subtr[0:subwin]),
+            #            np.std(subtr[subwin:2*subwin]),
+            #            np.std(subtr[2*subwin:3*subwin]) ]  
                               
                
-            stdv.append(np.max([a,b,c])/np.min([a,b,c]))
+            #stdv.append(np.max([a,b,c])/np.min([a,b,c]))
             t.append((t0+win/2).strftime('%s'))
             t0 += win
         
         # count how many windows are excluded on counter
         # step through the array enrg, stdv; this should be relatively fast as array are not particularly long
+
+
         winsmp = int(ceil(win*trace.stats.sampling_rate))
+        #extsmp = int(0.75 * winsmp)
          
         for i in range(2,len(enrg)):
+
+            sc = int((i+0.5) * winsmp)
+
             i0 = i - n_compare if i>=n_compare else 0
             i1 = i0 + n_compare 
             if i1 >= len(enrg):
@@ -214,19 +220,30 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
                 
             mean_enrg = np.mean(enrg[i0:i1])
             
-            if enrg[i] > factor_enrg * mean_enrg: #and stdv[i] > thresh_stdv:
+            if enrg[i] > factor_enrg * mean_enrg: #or stdv[i] > thresh_stdv:
                 
+                j0 = sc - int(0.5*winsmp)#extsmp
+                j1 = sc + int(0.5*winsmp)#extsmp
+
+
                 marker.append(1)
-                weighting_trace[i*winsmp:(i+1)*winsmp] *= 0.
-                if i*winsmp > n_hann:
-                    weighting_trace[i*winsmp-n_hann:i*winsmp] *= 1-tpr[0:n_hann]
+                weighting_trace[j0:j1] *= 0.
+                #weighting_trace[i*winsmp:(i+1)*winsmp] *= 0.
+                #if i*winsmp > n_hann:
+                if j0 > n_hann:
+                    weighting_trace[j0-n_hann:j0] *= 1-tpr[0:n_hann]
+                    #weighting_trace[i*winsmp-n_hann:i*winsmp] *= 1-tpr[0:n_hann]
                 else:
-                    weighting_trace[0:i*winsmp] *= 1-tpr[n_hann-i*winsmp:n_hann]
+                    weighting_trace[0:j0] *= 1-tpr[n_hann-j0:n_hann]
+                    #weighting_trace[0:i*winsmp] *= 1-tpr[n_hann-i*winsmp:n_hann]
                 
-                if (i+1)*winsmp+n_hann <=len(weighting_trace):
-                    weighting_trace[(i+1)*winsmp:(i+1)*winsmp+n_hann] *= 1-tpr[n_hann:]
+                #if (i+1)*winsmp+n_hann <=len(weighting_trace):
+                if j1 + n_hann <= len(weighting_trace):
+                    weighting_trace[j1:j1+n_hann] *= 1-tpr[n_hann:]
+                    #weighting_trace[(i+1)*winsmp:(i+1)*winsmp+n_hann] *= 1-tpr[n_hann:]
                 else:
-                    weighting_trace[(i+1)*winsmp:] *= 1-tpr[n_hann:n_hann+len(weighting_trace)-(i+1)*winsmp]
+                    weighting_trace[j1:] *= 1-tpr[n_hann:n_hann+len(weighting_trace)-j1]
+                    #weighting_trace[(i+1)*winsmp:] *= 1-tpr[n_hann:n_hann+len(weighting_trace)-(i+1)*winsmp]
                 # build in that if taper is longer than trace itself, it gets shortened.
             else:
                 marker.append(0)

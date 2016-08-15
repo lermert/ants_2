@@ -135,6 +135,8 @@ class PrepStream(object):
 			if cfg.verbose:
 				print('* Excluding high energy windows', 
 					file = self.ofid)
+			# This is run twice
+			self.event_exclude(cfg)
 			self.event_exclude(cfg)
 
 			if cfg.wins:

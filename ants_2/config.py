@@ -160,4 +160,50 @@ class ConfigPreprocess(object):
         # Make sure freqs. for downsampling are in descending order.
         self.Fs_new.sort() # Now in ascending order
         self.Fs_new=self.Fs_new[::-1] # Now in descending order
+
+
+DEFAULT_Correlation = {
+    "indirs": [],
+    "channels": [],
+    "channels_mix": False,
+    "time_start": "2000-01-01T00:00:00.0000",
+    "time_end": "2001-01-01T00:00:00.0000",
+    "corr_type": "ccc",
+    "input_format": "MSEED"
+}
+
+CONFIG_Correlation = os.path.join('input','config_correlation.json')
+
+class ConfigCorrelation(object):
+    """Contains basic parameters for the correlation job (paths, etc.)"""
+
+    def __init__(self):
         
+        self.indirs = None
+        self.channels = None
+        self.channels_mix = None
+        self.time_start = None
+        self.time_end = None
+        self.corr_type = None
+        self.input_format = None
+
+        self.initialize()
+
+
+    def initialize(self):
+
+        """Populates the class from ./config.json.
+        If ./config.json does not exist, writes a default file and exits."""
+
+        if not os.path.exists(CONFIG_Correlation):
+            with io.open(CONFIG_Correlation, 'wb') as fh:
+                json.dump(DEFAULT_Correlation, fh, sort_keys=True, indent=4, separators=(",", ": "))
+            return()
+
+        # Load all options.
+        with io.open(CONFIG_Correlation, 'r') as fh:
+            data = json.load(fh)
+            
+        for key, value in data.iteritems():
+            setattr(self, key, value)
+
