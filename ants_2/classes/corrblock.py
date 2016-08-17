@@ -13,8 +13,7 @@ from glob import glob
 class CorrTrace(object):
 
 	"""
-	Object holds correlation data along with metainformation (station id, geographic location) in preparation for correlation.
-	Context manager: Upon exiting, the binary file holding intermediate correlation traces will be closed properly and the stack will be written.
+	Object holds correlation data along with metainformation (station id, geographic location).
 	"""
 
 	def __init__(self,cha1,cha2,corr_type,nlag,t0=None,t1=None):
@@ -91,13 +90,7 @@ class CorrTrace(object):
 	def write_int(self):
 		pass
 
-	def __enter__(self):
-		return self
-
-	def __exit__(self,type,value,traceback):
-
-		self.write_tot()
-		self.int_file.close()
+	
 
 class CorrBlock(object):
 
@@ -124,9 +117,11 @@ class CorrBlock(object):
 
 
 		self.channels = list(set(self.channels))
-		print(self.channels)
-		self.data = Stream()
+		
+		
 		self.initialize_data()
+		self.sampling_rate = self.data[0].stats.sampling_rate
+		self.delta = self.data[0].stats.delta
 
 		self.correlate(cfg)
 
@@ -134,29 +129,81 @@ class CorrBlock(object):
 
 		t_0 = UTCDateTime(cfg.time_begin)
 		t_end = UTCDateTime(cfg.time_end)
+		win_len_seconds = cfg.time_window_length
+		win_len_samples = round(win_len_seconds*self.sampling_rate)
+		min_len_samples = round(cfg.time_min_len*self.sampling_rate)
+		
+
 
 		
 
-		self.initialize_data()
+		t = t_0
+		#t = min(t0,self.data)
 
-		t = min(t0,self.data)
+		while t <= t_end - (win_len_seconds - self.delta):
+			print(t)
+			
 
-		while t <= t_end - cfg.time_window_length:
+			
+			# - check endtime, if necessary, add data from 'later' file
+			self.update_data(t, win_len_seconds)
 
-			#self.update_data(t, cfg.win_len_sec)
+			# - slice the traces
+			windows = self.data.slice(t, t + win_len_seconds - self.delta)
+			
+			# - Apply preprocessing
+			
 
-			windows = self.data.slice(t, t + cfg.time_window_length)
-			print(windows)
+			# - correlate each relevant pair
+				# - check minimum length requirement
+				# - if horizontal components are involved, copy and rotate
+				
+
+			# - add to stack
+			# - if window counter reaches n_intermediate_stack: save intermediate
+
+
+			
 
 			t += cfg.time_window_length - cfg.time_overlap
 
 
+	def update_data(self,t,win_len):
+
+		for trace in self.data:
+
+			# is the trace long enough?
+			if trace.stats.endtime < t + win_len:
+
+
+				# which trace to read next?
+				try:
+					f = self.inv.data[trace.id].pop(0)
+				except:
+					f = None
+				# Get the last bit of the trace that we still need
+				trace.trim(starttime=t)
+
+				# read new trace
+				try:
+					newtrace = read(f) 
+				except:
+					print('** Could not read trace: %s' %f)
+
+				# add new trace to stream
+				self.data += newtrace
+
+			else:
+
+				# Only trim -- use no more memory than necessary
+				trace.trim(starttime=t)
 
 	def initialize_data(self):
+
+		self.data = Stream()
 		
 		for channel in self.channels:
 			
-			print(channel)
 			f = self.inv.data[channel].pop(0)
 			try:
 				self.data += read(f)
@@ -164,19 +211,3 @@ class CorrBlock(object):
 				print('** problems reading file %s' 
 				%self.inv.data[channel])
 
-
-
-
-
-			#if 
-# - loop over the station pairs with n 'datatraces' (one per ID):
-
-	# - 
-	# - check starttime, if necessary, add data from 'later' file
-	# - slice the traces
-	# - if horizontal components are involved, rotate them
-	# - check minimum length requirement
-	# - transform everything to FD?
-	# - correlate each relevant pair
-	# - add to stack
-	# - if window counter reaches n_intermediate_stack: save intermediate

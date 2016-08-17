@@ -223,6 +223,7 @@ def ant_download():
             if id=='': continue
            
             fls=glob(os.path.join(outdir,id+'*'))
+            fls.sort()
            
             if fls != []:
                 print('Files downloaded for id: '+id,file=outf)

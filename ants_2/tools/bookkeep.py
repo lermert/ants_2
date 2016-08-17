@@ -140,7 +140,7 @@ class file_avail(object):
         return(channels)
 
     def _correlation_blocks(self,cfg):
-        # ToDo build in updating mode again?
+       
         staids = self.stations.keys()
         # sort alphabetically
         staids.sort()
@@ -170,9 +170,7 @@ class file_avail(object):
             idprs = []
             for pair in blck:
 
-                idprs.extend(self._channel_pairs(pair[0],pair[1],cfg))
-
-                
+                idprs.extend(self._channel_pairs(pair[0],pair[1],cfg))  
 
             if idprs != []:
                 blcks_channels.append(idprs)
