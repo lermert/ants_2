@@ -7,6 +7,7 @@ import os
 import re
 from glob import glob
 
+from ants_2.tools.preprocess2 import ram_norm, whiten
 
 
 
@@ -152,10 +153,43 @@ class CorrBlock(object):
 			windows = self.data.slice(t, t + win_len_seconds - self.delta)
 			
 			# - Apply preprocessing
-			
+			for w in windows:
+				if cfg.whiten:
+					w = whiten(w,cfg.white_freqmin,cfg.white_freqmax,cfg.white_taper)
+
+				if cfg.onebit:
+					w.data = np.sign(w.data)
+
+				if cfg.ram_norm:
+					w = ram_norm(w,cfg.ram_window,cfg.ram_prefilt)
+				
 
 			# - correlate each relevant pair
+			while block:
+
+				pair = block.pop()
+
+				# - select traces
+				net1, sta1, loc1, cha1 = pair[0].split('.')
+				net2, sta2, loc2, cha2 = pair[1].split('.')
+
+				if 'R' in cha1 or 'R' in cha2 or 'T' in cha1 or 'T' in cha2:
+
+					#str1, str2 = 
+
+				tr1 = windows.select(network = net1,
+									 station = sta1,
+									 location = loc1,
+									 channel = cha1)
+				tr2 = windows.select(network = net2,
+									 station = sta2,
+									 location = loc2,
+									 channel = cha2)
+
+				
+
 				# - check minimum length requirement
+
 				# - if horizontal components are involved, copy and rotate
 				
 
