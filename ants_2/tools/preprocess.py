@@ -1,146 +1,73 @@
-from __future__ import print_function
+import numpy as np
+from obspy.signal.filter import envelope
+from scipy import fftpack
 
-from numpy import isnan, isinf
-from scipy.signal import sosfilt
-from obspy import Stream, Inventory
 
-# cfg should not be known here.
-#from ants_2.config import ConfigPreprocess
-#cfg = ConfigPreprocess()
+def whiten_taper(freq1,freq2,df,npts,taper_width):
+    
+    #freqaxis=np.fft.fftfreq(tr.stats.npts,tr.stats.delta)
+    
+    ind_fw1 = int(round(freq1/df))
+    ind_fw2 = int(round(freq2/df))
+    
+    
+    length_taper = int(round((freq2-freq1)*\
+    taper_width/df))
+    
+    taper_left = np.linspace(0.,np.pi/2,length_taper)
+    taper_left = np.square(np.sin(taper_left))
+    
+    taper_right = np.linspace(np.pi/2,np.pi,length_taper)
+    taper_right = np.square(np.sin(taper_right))
+    
+    taper = np.zeros(npts)
+    taper[ind_fw1:ind_fw2] += 1.
+    taper[ind_fw1:ind_fw1+length_taper] = taper_left
+    taper[ind_fw2-length_taper:ind_fw2] = taper_right
 
-class Preprocess(object):
-    
-    def __init__(self,stream,verbose,ofid):
-        
-        self.stream = stream
-        if not isinstance(self.stream,Stream):
-            msg = "stream must be an obspy stream object."
-            raise TypeError(msg)
-        self.verbose = verbose
-        self.ofid = ofid
-        
-    
-    
-    def check_nan_inf(self):
-        """
-        Check if trace contains nan, inf and takes them out of the stream
-        """
-    
-        for i in range(len(self.stream)):
-            
-            #- check NaN
-            if True in isnan(self.stream[i].data):
-                if self.verbose: 
-                    print('** trace contains NaN, discarded',\
-                file=self.ofid)
-                
-                del_trace = self.stream.pop(i)
-                print(del_trace,file=self.ofid)
-                continue
-                        
-            #- check infinity
-            if True in isinf(self.stream[i].data):
-                if self.verbose: print('** trace contains infinity, discarded',\
-                file=self.ofid)
-                
-                del_trace = self.stream.pop(i)
-                print(del_trace,file=self.ofid)
-                continue
-               
+    return taper
 
-    def detrend(self):
-        """
-        remove linear trend
-        """
 
-        if self.verbose:
-            print('* detrend\n',file=self.ofid)
+def whiten(tr,freq1,freq2,taper_width):
+    # ToDo check fft here
+    
+    # Build a cosine taper for the frequency domain
+    df = 1/(tr.stats.npts*tr.stats.delta)
+    white_tape = whiten_taper(freq1,freq2,tr.stats.npts,taper_width)
+    
+    # Transform data to frequency domain
+    tr.taper(max_percentage=0.05, type='cosine')
+    spec = fftpack.fft(tr.data)
+    
+    # Don't divide by 0
+    tol = np.max(np.abs(spec)) / 1e5
+    
+    # whiten
+    spec /= np.abs(spec+tol)
+    spec *= taper
+    
+    # Go back to time domain
+    tr.data = np.real(fftpack.ifft(spec,n=len(tr.data)))
+    return tr
+    
+    
+def ram_norm(tr,winlen,prefilt=None):
+    
+    trace_orig = tr.copy()
+    hlen = int(winlen*trace.stats.sampling_rate/2.)
+    weighttrace = np.zeros(trace.stats.npts)
+    
+    if prefilt is not None:
+        trace.filter('bandpass',freqmin=prefilt[0],freqmax=prefilt[1],\
+        corners=prefilt[2],zerophase=True)
         
-        self.stream.detrend('linear')
-    
-    
+    envlp = envelope(trace.data)
 
-    def demean(self):
-        """
-        remove the mean
-        """
-
-        if self.verbose: 
-            print('* demean\n',file=self.ofid)
+    for n in xrange(hlen,trace.stats.npts-hlen):
+        weighttrace[n] = np.sum(envlp[n-hlen:n+hlen+1]/(2.*hlen+1))
         
-        self.stream.detrend('demean')
-
-       
+    weighttrace[0:hlen] = weighttrace[hlen]
+    weighttrace[-hlen:] = weighttrace[-hlen-1]
     
-    def taper(self,perc):
-        
-        if self.verbose:
-            print('* tapering\n',file=self.ofid)
-            
-        self.stream.taper(type='cosine',max_percentage=perc)
-    
-    def downsampling(self,Fs_new,sos_aa,zerophase_antialias=False):
-        
-        
-        # Apply antialias filter
-        
-        for trace in self.stream:
-        
-            if zerophase_antialias:
-                firstpass = sosfilt(sos_aa,trace.data)
-                trace.data = sosfilt(sos_aa,firstpass[::-1])[::-1]
-            else:
-                trace.data = sosfilt(sos_aa,trace.data)
-        
-        # Decimate if possible, otherwise interpolate
-        for i in range(len(Fs_new)):
-            
-            Fs_old = self.stream[0].stats.sampling_rate
-            Fs = Fs_new[i]
-            
-            if Fs_old % Fs == 0:
-                dec = int( Fs_old / Fs)
-                self.stream.decimate(dec, no_filter=True, strict_length=False)
-                if self.verbose:
-                    print('* decimated traces to %g Hz' %Fs,
-                    file=self.ofid)
-            else:
-                try:
-                    self.stream.interpolate(sampling_rate = Fs,
-                    method='lanczos')
-                    print('* interpolated traces to %g Hz' %Fs,
-                    file=self.ofid)
-                except:
-                    self.stream.interpolate(sampling_rate = Fs)
-                    print('* interpolated trace to %g Hz' %Fs,
-                    file=self.ofid)
-       
-            
-   
-    
-    def remove_response(self,inv,pre_filt,**kwargs):
-        
-        """
-        kwargs: Will be passed to obspy simulate or remove_response: water_level, taper,
-        taper_fraction, plot, output
-        """
-        
-        if isinstance(self.stream.inv,dict):
-            self.stream.simulate(paz_remove=None,pre_filt=pre_filt,
-            seedresp=inv,sacsim=True,pitsasim=False,**kwargs)
-            if self.verbose:
-                print('* removed instrument response using seedresp',file=self.ofid)
-                
-        elif isinstance(self.stream.inv,Inventory):
-            self.stream.remove_response(inventory=inv,
-            pre_filt=pre_filt,**kwargs)
-            if self.verbose:
-                print('* removed instrument response using staxml inv',file=self.ofid)
-                
-        else:
-            msg = 'No inventory or seedresp found.'
-            raise ValueError(msg)
-        
-        
-    
-    
+    trace_orig.data /= weighttrace
+    return(trace_orig)

@@ -1,13 +1,46 @@
 # Correlation block object:
-from obspy import Stream, Trace, read_inventory, UTCDateTime, read
+from obspy import Stream, read_inventory, UTCDateTime, read
 from obspy.geodetics import gps2dist_azimuth
 
 import numpy as np
 import os
 import re
-from glob import glob
 
-from ants_2.tools.preprocess2 import ram_norm, whiten
+
+from ants_2.tools.preprocess import ram_norm, whiten
+from ants_2.tools.correlations import cross_covar
+# list of possible channels combinations indicating that the data needs to be rotated.
+horizontals = ['RR','RT','TR','TT','TZ','ZT','RZ','ZR']
+
+
+def get_geoinf(id1,id2):
+
+
+		inv1 = '{}.{}.xml'.format(*id1.split('.')[0:2])
+		inv2 = '{}.{}.xml'.format(*id2.split('.')[0:2])
+
+		inv1 = read_inventory(os.path.join('meta','stationxml',inv1))
+		inv2 = read_inventory(os.path.join('meta','stationxml',inv2))
+
+		# Replace 'radial' and 'transverse' by 'N' and 'E'
+		id1 = re.sub('\.??R$','N',id1)
+		id2 = re.sub('\.??R$','N',id2)
+		id1 = re.sub('\.??T$','E',id1)
+		id2 = re.sub('\.??T$','E',id2)
+		
+
+		c1 = inv1.get_coordinates(id1)
+		c2 = inv2.get_coordinates(id2)
+
+		lat1, lon1, lat2, lon2 = (
+			c1['latitude'],
+			c1['longitude'],
+			c2['latitude'],
+			c2['longitude'])
+
+		dist, az, baz = gps2dist_azimuth(lat1,lon1,lat2,lon2)
+
+		return lat1, lon1, lat2, lon2, dist, az, baz
 
 
 
@@ -33,11 +66,8 @@ class CorrTrace(object):
 		self.cnt_tot = 0
 		self.cnt_int = 0
 
-		geo_inf = self.get_geoinf()
+		geo_inf = get_geoinf(cha1,cha2)
 		
-			
-		
-
 		self.lat1 = geo_inf[0]
 		self.lat2 = geo_inf[2]
 		self.lon1 = geo_inf[1]
@@ -52,34 +82,7 @@ class CorrTrace(object):
 		int_file = os.path.join('data','correlations',int_file)
 		self.int_file = open(int_file,'wb')
 
-	def get_geoinf(self):
-
-
-		inv1 = '{}.{}.xml'.format(*self.id1.split('.')[0:2])
-		inv2 = '{}.{}.xml'.format(*self.id2.split('.')[0:2])
-
-		inv1 = read_inventory(os.path.join('meta','stationxml',inv1))
-		inv2 = read_inventory(os.path.join('meta','stationxml',inv2))
-
-		# Replace 'radial' and 'transverse' by 'N' and 'E'
-		id1 = re.sub('\.??R$','N',self.id1)
-		id2 = re.sub('\.??R$','N',self.id2)
-		id1 = re.sub('\.??T$','E',id1)
-		id2 = re.sub('\.??T$','E',id2)
-		
-
-		c1 = inv1.get_coordinates(id1)
-		c2 = inv2.get_coordinates(id2)
-
-		lat1, lon1, lat2, lon2 = (
-			c1['latitude'],
-			c1['longitude'],
-			c2['latitude'],
-			c2['longitude'])
-
-		dist, az, baz = gps2dist_azimuth(lat1,lon1,lat2,lon2)
-
-		return lat1, lon1, lat2, lon2, dist, az, baz
+	
 
 
 	def _add_corr(self):
@@ -97,49 +100,65 @@ class CorrBlock(object):
 
 
 # - initialize with station pairs
-	def __init__(self,block,inv,cfg):
+	def __init__(self,block,cfg):
 
-		self.inv = inv
+		
 		self.correlations = []
-		self.channels = []
-
-		n_lag = 13
-
-		for pair in block:
-			try:
-				self.correlations.append(CorrTrace(pair[0],pair[1],
-				cfg.corr_type,n_lag))
-			except:
-				print('** Could not initialize correlation for %s,%s: check metadata'
-					%(pair[0],pair[1]))
-			
-			self.channels.append(pair[0])
-			self.channels.append(pair[1])
+		self.inv = block.inventory
+		self.channels = block.channels
+		self.station_pairs = block.station_pairs
+		self.channel_pairs = block.channel_pairs
 
 
-		self.channels = list(set(self.channels))
-		
-		
 		self.initialize_data()
 		self.sampling_rate = self.data[0].stats.sampling_rate
 		self.delta = self.data[0].stats.delta
 
-		self.correlate(cfg)
+		n_lag = 13
 
-	def correlate(self,cfg):
+		for cp in block.channel_pairs:
+			for pair in cp:
+				try:
+					self.correlations.append(CorrTrace(pair[0],pair[1],
+					cfg.corr_type,n_lag))
+				except:
+					print('** Could not initialize correlation for %s,%s: check metadata'
+						%(pair[0],pair[1]))
+
+
+		
+		if any(i in cfg.corr_tensorcomponents for i in horizontals):
+
+			self.azms = []
+			self.bazs = []
+
+			for pair in self.station_pairs:
+				try:
+					geoinf = get_geoinf(pair[0],pair[1])
+					# - find azimuth, backazimuth
+					self.azms.append(geoinf[5])
+					self.bazs.append(geoinf[6])
+				except:
+					self.azms.append(0)
+					self.bazs.append(0)
+
+
+		
+
+	def run(self,cfg):
 
 		t_0 = UTCDateTime(cfg.time_begin)
 		t_end = UTCDateTime(cfg.time_end)
 		win_len_seconds = cfg.time_window_length
-		win_len_samples = round(win_len_seconds*self.sampling_rate)
-		min_len_samples = round(cfg.time_min_len*self.sampling_rate)
+		win_len_samples = int(round(win_len_seconds*self.sampling_rate))
+		min_len_samples = int(round(cfg.time_min_window*self.sampling_rate))
+		max_lag_samples = int(round(cfg.corr_maxlag * self.sampling_rate))
+
+
+
 		
-
-
-		
-
 		t = t_0
-		#t = min(t0,self.data)
+		
 
 		while t <= t_end - (win_len_seconds - self.delta):
 			print(t)
@@ -152,8 +171,12 @@ class CorrBlock(object):
 			# - slice the traces
 			windows = self.data.slice(t, t + win_len_seconds - self.delta)
 			
+
+			# self.preprocess?
 			# - Apply preprocessing
 			for w in windows:
+				# - check minimum length requirement
+
 				if cfg.whiten:
 					w = whiten(w,cfg.white_freqmin,cfg.white_freqmax,cfg.white_taper)
 
@@ -164,41 +187,60 @@ class CorrBlock(object):
 					w = ram_norm(w,cfg.ram_window,cfg.ram_prefilt)
 				
 
-			# - correlate each relevant pair
-			while block:
+			# - station pair loop
+			for sp_i in range(len(self.station_pairs)):
 
-				pair = block.pop()
-
+				pair = self.station_pairs[sp_i]
+				print(pair)
 				# - select traces
-				net1, sta1, loc1, cha1 = pair[0].split('.')
-				net2, sta2, loc2, cha2 = pair[1].split('.')
-
-				if 'R' in cha1 or 'R' in cha2 or 'T' in cha1 or 'T' in cha2:
-
-					#str1, str2 = 
-
-				tr1 = windows.select(network = net1,
-									 station = sta1,
-									 location = loc1,
-									 channel = cha1)
-				tr2 = windows.select(network = net2,
-									 station = sta2,
-									 location = loc2,
-									 channel = cha2)
-
+				[net1, sta1] = pair[0].split('.')
+				[net2, sta2] = pair[1].split('.')
 				
-
-				# - check minimum length requirement
+				str1 = windows.select(network=net1, station=sta1)
+				str2 = windows.select(network=net2, station=sta2)
+				
 
 				# - if horizontal components are involved, copy and rotate
+				if any([i in cfg.corr_tensorcomponents for i in horizontals]):
+					
+					try:
+						str1.rotate('NE->RT',back_azimuth=bazs[sp_i])
+						
+					except:
+						print('** data not rotated for station: ')
+						print(str1)
+						pass
+					try:
+						str2.rotate('NE->RT',back_azimuth=azms[sp_i])
+					except:
+						print('** data not rotated for station: ')
+						print(str2)
+						pass
+
+				# - channel loop
 				
+				for cpair in self.channel_pairs[sp_i]:
+					
+					print(cpair)
+					loc1, cha1 = cpair[0].split('.')[2:4]
+					loc2, cha2 = cpair[1].split('.')[2:4]
+					try:
+						tr1 = str1.select(location=loc1,channel=cha1)[0]
+						tr2 = str2.select(location=loc2,channel=cha2)[0]
+					except IndexError:
+						continue
+					# - check minimum length requirement
+					if tr1.stats.npts < min_len_samples:
+						continue
+					if tr2.stats.npts < min_len_samples:
+						continue
+					# - correlate
+					correlation = cross_covar(tr1.data,tr2.data,
+						max_lag_samples,False)[0]
+					
+					# - add to stack
 
-			# - add to stack
-			# - if window counter reaches n_intermediate_stack: save intermediate
-
-
-			
-
+			# - update time
 			t += cfg.time_window_length - cfg.time_overlap
 
 
@@ -212,7 +254,7 @@ class CorrBlock(object):
 
 				# which trace to read next?
 				try:
-					f = self.inv.data[trace.id].pop(0)
+					f = self.inv[trace.id].pop(0)
 				except:
 					f = None
 				# Get the last bit of the trace that we still need
@@ -238,7 +280,7 @@ class CorrBlock(object):
 		
 		for channel in self.channels:
 			
-			f = self.inv.data[channel].pop(0)
+			f = self.inv[channel].pop(0)
 			try:
 				self.data += read(f)
 			except IOError:

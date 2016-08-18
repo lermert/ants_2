@@ -168,12 +168,18 @@ DEFAULT_Correlation = {
     "time_end": "2001-01-01T00:00:00.0000",
     "time_window_length":3600,
     "time_overlap":0,
+    "time_min_window":3600,
+    "corr_autocorr": False,
     "corr_type": "ccc",
+    "corr_maxlag": 0,
     "corr_tensorcomponents": ["ZZ"],
     "n_stationpairs": 1,
     "input_format": "MSEED",
     "locations_mix": False,
     "locations":[],
+    "whiten": False,
+    "onebit": False,
+    "ram_norm": False,
     "update": False,
 }
 
@@ -190,14 +196,19 @@ class ConfigCorrelation(object):
         self.time_end = None
         self.time_overlap = None
         self.time_window_length = None
+        self.time_min_window = None
         self.corr_type = None
+        self.corr_maxlag = None
         self.corr_tensorcomponents = None
+        self.corr_autocorr = None
         self.input_format = None
         self.n_stationpairs = None
         self.locations_mix = None
         self.locations = None
         self.update = None
-
+        self.whiten = None
+        self.ram_norm = None
+        self.onebit = None
 
         self.initialize()
 

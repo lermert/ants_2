@@ -1,6 +1,7 @@
 import os
 from glob import glob
 from obspy import UTCDateTime
+from copy import deepcopy
 
 def find_files(indirs, format):
         
@@ -44,167 +45,215 @@ def name_processed_file(stats,startonly=False):
 def name_correlation_file(sta1,sta2,corr_type,fmt='SAC'):
 
     name = '{}--{}.{}.{}'.format(sta1,sta2,corr_type,fmt)
-    print(name)
+   
     return(name)
 
 
 
-class file_avail(object):
+def file_inventory(cfg):
+    
+    stations = {}
+    data = {}
 
-    """
-    For each station id, keep a dictionary of available files within the time range requested in cfg.
-    """
+    # start- and endtime specified in configuration
+    t0 = UTCDateTime(cfg.time_begin) 
+    t1 = UTCDateTime(cfg.time_end)
+
+    # input directories and format (MSEED, SAC etc)
+    indirs = cfg.indirs
+    filefmt = cfg.input_format
+
+
+    # list all files in input directories
+    files = find_files(indirs,filefmt)
+    
+    for f in files:
+
+        # decide whether file fits time range
+        fn = os.path.basename(f).split('.')
+        st = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[4:9]))
+        et = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[9:14]))
+       
+        if st > t1 or et < t0:
+            continue
+        else:
+
+            station = '{}.{}'.format(*fn[0:2])
+            channel = '{}.{}.{}.{}'.format(*fn[0:4])
+
+            # - stations dictionary: What stations exist and what channels do they have
+            if station not in stations.keys():
+                stations[station] = []
+
+            # - channels dictionary: Inventory of files for each channel
+            if channel not in stations[station]:
+                stations[station].append(channel)
+
+            if channel not in data.keys():
+                data[channel] = []
+
+            data[channel].append(f)
+    
+    return(stations, data)
+
+
+def station_pairs(staids,n,autocorr):
+   
+    #staids = self.stations.keys()
+    # sort alphabetically
+    staids.sort()
+    blcks_stations = []
+    #blcks_channels = []
+    idprs = []
+
+    n_ids = len(staids)
+    n_auto = 0 if autocorr else 1
+    #n_blk = cfg.n_stationpairs
+
+    for i in range(n_ids):
+        for j in range(i+n_auto,n_ids):
+
+            if len(idprs) == n:
+                blcks_stations.append(idprs)
+                idprs = []
+
+            idprs.append((staids[i],staids[j]))
+
+    if len(idprs) < n:
+        blcks_stations.append(idprs)
+
+
+    # idprs = []
+# 
+    # for blck in blcks_stations:
+        # idprs = []
+        # for pair in blck:
+# 
+            # idprs.extend(self._channel_pairs(pair[0],pair[1],cfg))  
+# 
+        # if idprs != []:
+            # blcks_channels.append(idprs)
+
+    return blcks_stations
+
+
+def channel_pairs(channels1,channels2,cfg):
+
+
+    channels = []
+    tensor_comp = cfg.corr_tensorcomponents
+
+
+    for c1 in channels1:
+        for c2 in channels2:
+            
+            if cfg.update:
+                f = name_correlation_file(c1,c2,cfg.corr_type)
+                f = os.path.join('data','correlations',f)
+                if os.path.exists(f):
+                    continue
+
+            loc1 = c1.split('.')[2]
+            loc2 = c2.split('.')[2]
+
+            if loc1 not in cfg.locations:
+                continue
+
+            if loc2 not in cfg.locations:
+                continue
+
+            if loc1 != loc2 and not cfg.locations_mix:
+                continue
+
+            comp = c1[-1] + c2[-1]
+
+            if comp in tensor_comp:
+                channels.append((c1,c2))
+
+    return(channels)
+
+
+class corr_block(object):
+
+    def __init__(self):
+        
+        self.stations = []
+        self.channels = []
+        self.inventory = {}
+        self.station_pairs = []
+        self.channel_pairs = []
+
+    def __repr__(self):
+
+        return "Block containing %g channel pairs" %len(self.channel_pairs)
+
+    def __str__(self):
+
+        return "Block containing %g channel pairs" %len(self.channel_pairs)
+
+
+class correlation_inventory(object):
 
     def __init__(self,cfg):
 
-        self._get_data(cfg)
-        self._correlation_blocks(cfg)
+        self.cfg = cfg
+
+        # - Find available data
+        self.stations, self.files = file_inventory(cfg)
+        all_stations = self.stations.keys()
+
+        # - Determine station pairs
+        # - station pairs are grouped into blocks
+        self.station_blocks = station_pairs(all_stations,
+            cfg.n_sta_perproc, cfg.corr_autocorr)
 
 
-    def _get_data(self,cfg):
+        self.blocks = []
+
+        # - Determine channel pairs for each station pair
+        # - station pairs are grouped into blocks
+        for block in self.station_blocks:
+            self._add_corrblock(block)
+
+    def __repr__(self):
+        return "Correlation inventory"
+
+    def __str__(self):
+        return "%g blocks in correlation inventory" %len(self.blocks)
+
+    def _add_corrblock(self,station_block):
+
+        block = corr_block()
         
 
+        # Station pairs and channel pairs should be at the same index.
+        block.station_pairs = station_block[:]
+        block.channel_pairs = []
 
-        files = []
-        self.stations = {}
-        self.data = {}
+        # Make a unique station list for this block
+        for p in station_block:
+            block.stations.append(p[0])
+            block.stations.append(p[1])
+        block.stations = list(set(block.stations))
 
-        indirs = cfg.indirs
-        t0 = UTCDateTime(cfg.time_begin) 
-        t1 = UTCDateTime(cfg.time_end)
-        filefmt = cfg.input_format
+        # Find the relevant channel combinations
+        for p in station_block:
+            
+            sta1 = p[0]
+            sta2 = p[1]
+            cpairs = channel_pairs(self.stations[sta1],
+                    self.stations[sta2],self.cfg)
+            block.channel_pairs.append(cpairs)
 
+        # Make a unique channel list for this block
+        for cp in block.channel_pairs:
+            for c in cp:
+                block.channels.append(c[0])
+                block.channels.append(c[1])
+        block.channels = list(set(block.channels))
 
-        files = find_files(indirs,filefmt)
-        
-        for f in files:
- 
-            fn = os.path.basename(f).split('.')
-            st = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[4:9]))
-            et = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[9:14]))
-           
-            if st > t1 or et < t0:
-                continue
-            else:
+        # Add file inventory for the channels in question
+        inventory = {c: self.files[c] for c in block.channels}
+        block.inventory = deepcopy(inventory)
 
-                station = '{}.{}'.format(*fn[0:2])
-                channel = '{}.{}.{}.{}'.format(*fn[0:4])
-
-                if station not in self.stations.keys():
-                    self.stations[station] = []
-
-                if channel not in self.stations[station]:
-                    self.stations[station].append(channel)
-
-                if channel not in self.data.keys():
-                    self.data[channel] = []
-
-                self.data[channel].append(f)
-        
-        return()
-
-    def _channel_pairs(self,sta1,sta2,cfg):
-
-
-        channels = []
-        tensor_comp = cfg.corr_tensorcomponents
-
-
-        for c1 in self.stations[sta1]:
-            for c2 in self.stations[sta2]:
-
-
-                if cfg.update:
-                    f = name_correlation_file(c1,c2,cfg.corr_type)
-                    f = os.path.join('data','correlations',f)
-                    if os.path.exists(f):
-                        continue
-
-                loc1 = c1.split('.')[2]
-                loc2 = c2.split('.')[2]
-
-                if loc1 not in cfg.locations:
-                    continue
-
-                if loc2 not in cfg.locations:
-                    continue
-
-                if loc1 != loc2 and not cfg.locations_mix:
-                    continue
-
-                comp = c1[-1] + c2[-1]
-
-                if comp in tensor_comp:
-                    channels.append((c1,c2))
-
-        return(channels)
-
-    def _correlation_blocks(self,cfg):
-       
-        staids = self.stations.keys()
-        # sort alphabetically
-        staids.sort()
-        blcks_stations = []
-        blcks_channels = []
-        idprs = []
-
-        n_ids = len(staids)
-        n_blk = cfg.n_stationpairs
-
-        for i in range(n_ids):
-            for j in range(i+1,n_ids):
-
-                if len(idprs) == n_blk:
-                    blcks_stations.append(idprs)
-                    idprs = []
-
-                idprs.append((staids[i],staids[j]))
-
-        if len(idprs) < n_blk:
-            blcks_stations.append(idprs)
-
-
-        idprs = []
-
-        for blck in blcks_stations:
-            idprs = []
-            for pair in blck:
-
-                idprs.extend(self._channel_pairs(pair[0],pair[1],cfg))  
-
-            if idprs != []:
-                blcks_channels.append(idprs)
-
-        self.blocks = blcks_channels
-
-
- 
-        
-# def read_data(filepath,ofid,verbose):
-    
-#     if verbose:
-#         print('===========================================================',\
-#         file=ofid)
-#         print('* opening file: '+filepath+'\n',file=ofid)
-        
-#     #- read data
-#     try:
-#         data=read(filepath)
-
-#     except (TypeError, IOError):
-#         if verbose: 
-#             print('** file wrong type or not found, skip.',
-#             file=ofid)
-#         return []
-#     except:
-#         if cfg.verbose: 
-#             print('** unexpected read error, skip.',
-#             file=ofid)
-#         return []
-        
-#     #- check if this file contains data
-#     if len(data) == 0:
-#         print('** file contains no data, skip.',file=ofid)
-#         return []
-    
- #   return data
+        self.blocks.append(block)
