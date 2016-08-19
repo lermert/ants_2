@@ -46,15 +46,22 @@ def new_project():
    
 @run.command(help='Download data from IRIS or Arclink or both.\nEdit input file\
 input/config_download.json')
-def par_download():
+def download():
     from scripts.ant_download import ant_download
     ant_download()
 
 @run.command(help='Instrument correction and other preprocessing.')
-def par_preprocess():
+def preprocess():
     from scripts.ant_preprocess import preprocess
     preprocess()
     
+
+@run.command(help='Correlation')
+def correlation():
+    from scripts.ant_correlation import correlate
+    correlate()
+
+
 @run.command(help='Plot stations for which data is available.')
 def plot_stations():
     from tools.plot import plot_stations

@@ -8,7 +8,7 @@ from ants_2.config import ConfigCorrelation
 cfg = ConfigCorrelation()
 from ants_2.classes.corrblock import CorrBlock
 
-import ants_2.tools.bookkeep as bk
+from ants_2.tools.bookkeep import correlation_inventory
 from obspy import UTCDateTime
 from glob import glob
 from copy import deepcopy
@@ -33,7 +33,7 @@ print("Size is %g" %size)
 def correlate():    
   # Create output directory, if necessary
 
-    outdir = os.path.join('data','processed')
+    outdir = os.path.join('data','correlations')
      
     if rank == 0 and not os.path.exists(outdir):
         os.mkdir(outdir)
@@ -42,39 +42,42 @@ def correlate():
 
     # Create own output directory, if necessary
 
-    rankdir = os.path.join(outdir,'rank_%g' %rank)
-    if not os.path.exists(rankdir):
-        os.mkdir(rankdir)
+    #rankdir = os.path.join(outdir,'rank_%g' %rank)
+    #if not os.path.exists(rankdir):
+    #    os.mkdir(rankdir)
 
 
     # correlation report file
 
-    output_file = os.path.join(rankdir,
+    output_file = os.path.join(outdir,
         'correlation_report_rank%g.txt' %rank)
 
     if os.path.exists(output_file):
         ofid = open(output_file,'a')
-        print('UPDATING, Date:',file=ofid)
+        print('Resuming correlation job, Date:',file=ofid)
         print(time.strftime('%Y.%m.%dT%H:%M'),file=ofid)
     else:
         ofid = open(output_file,'w')
-        print('CORRELATING, Date:',file=ofid)
+        print('Correlation job, Date:',file=ofid)
         print(time.strftime('%Y.%m.%dT%H:%M'),file=ofid)
 
 
     # - get list of files available;
     # - get blocks of channel pairs
 
-    favail = bk.file_avail(cfg)
+    c = correlation_inventory(cfg)
+    
 
 
 # - LOOP over blocks:
-    
-    for b in favail.blocks[rank::size]:
 
-        favail_block = deepcopy(favail)
+    
+    for b in c.blocks[rank::size]:
+
+        block = deepcopy(b)
         # initialize a block of correlations
-        c = CorrBlock(b,favail_block,cfg)
+        c = CorrBlock(block,cfg)
+        c.run(output_file = ofid)
 
 # - block.correlate
  

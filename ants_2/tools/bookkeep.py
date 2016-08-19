@@ -173,7 +173,7 @@ def channel_pairs(channels1,channels2,cfg):
     return(channels)
 
 
-class corr_block(object):
+class _block(object):
 
     def __init__(self):
         
@@ -223,7 +223,7 @@ class correlation_inventory(object):
 
     def _add_corrblock(self,station_block):
 
-        block = corr_block()
+        block = _block()
         
 
         # Station pairs and channel pairs should be at the same index.

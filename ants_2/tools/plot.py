@@ -97,3 +97,21 @@ for locations \'\',00,10.' %i
 		plt.text(x,y,'   '+sta.id,fontweight='bold',color='w')
 	# save map in test folder
 	plt.show()
+
+
+
+# Some sort of loop function to plot converging stack
+#if self.plot:
+#			lag = np.linspace(-cfg.corr_maxlag,cfg.corr_maxlag,max_lag_samples)
+#			plt.ion()
+#			fig = plt.figure()
+#			ax = fig.add_subplot(111)
+#			line1, = ax.plot(lag, np.zeros(max_lag_samples), '-') # Returns a tuple of line objects, thus the comma
+#			plot_pair = self.channel_pairs[0]
+#					
+#		
+#					if self.plot and cpair == plot_pair:
+#						line1.set_ydata(correlation)
+#						fig.canvas.draw()
+# 						
+# 
