@@ -48,8 +48,16 @@ def whiten(tr,freq1,freq2,taper_width):
     
     # Go back to time domain
     tr.data = np.real(fftpack.ifft(spec,n=len(tr.data)))
-    return tr
+    #return tr
     
+def cap(tr,cap_thresh):
+    
+    std = np.std(tr.data*1.e6)
+    gllow = cap_thresh * std * -1
+    glupp = cap_thresh * std
+    tr.data = np.clip(tr.data*1.e6,gllow,glupp)/1.e6
+
+    #return tr
     
 def ram_norm(tr,winlen,prefilt=None):
     
@@ -69,5 +77,5 @@ def ram_norm(tr,winlen,prefilt=None):
     weighttrace[0:hlen] = weighttrace[hlen]
     weighttrace[-hlen:] = weighttrace[-hlen-1]
     
-    trace_orig.data /= weighttrace
-    return(trace_orig)
+    trace.data = trace_orig.data / weighttrace
+    #return(trace_orig)

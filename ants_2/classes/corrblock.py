@@ -4,17 +4,18 @@ from obspy import Stream, UTCDateTime, read
 import numpy as np
 import os
 import re
-import gc
+
 
 from ants_2.tools.bookkeep import name_correlation_file
+from ants_2.tools.util import get_geoinf
 from ants_2.classes.corrtrace import CorrTrace
-from ants_2.tools.preprocess import ram_norm, whiten
+from ants_2.tools.preprocess import ram_norm, whiten, cap
 from ants_2.tools.correlations import cross_covar
 # list of possible channels combinations indicating that the data needs to be rotated.
 horizontals = ['RR','RT','TR','TT','TZ','ZT','RZ','ZR']
 import matplotlib.pyplot as plt
 
-from pympler import muppy, summary
+#from pympler import muppy, summary
 
 class CorrBlock(object):
 
@@ -22,35 +23,35 @@ class CorrBlock(object):
 # - initialize with station pairs
 	def __init__(self,block,cfg):
 
-		
+
+		self.cfg = cfg
 		self._correlations = {}
+
+
 		self.inv = block.inventory
 		self.channels = block.channels
 		self.station_pairs = block.station_pairs
 		self.channel_pairs = block.channel_pairs
-		self.cfg = cfg
 
-		print('Working on station pairs:')
-		for sta in self.station_pairs:
-			print("{}--{}".format(sta[0],sta[1]))
 
 		self.initialize_data()
 		self.sampling_rate = self.data[0].stats.sampling_rate
 		self.delta = self.data[0].stats.delta
 
-		n_lag = 13
+		
 
 		for cp in block.channel_pairs:
 			for pair in cp:
 
 				cp_name = '{}--{}'.format(*pair)
+				preprstring = self.get_prepstring()
 
-				try:
-					self._correlations[cp_name] = CorrTrace(pair[0],pair[1],
-				self.sampling_rate)
-				except:
-				 	print('** Could not initialize correlation for %s,%s: check metadata'
-				 		%(pair[0],pair[1]))
+				#try:
+				self._correlations[cp_name] = CorrTrace(pair[0],pair[1],
+				self.sampling_rate,stck_int=cfg.interm_stack)
+				#except:
+				# 	print('** Could not initialize correlation for %s,%s: check metadata'
+				# 		%(pair[0],pair[1]))
 
 
 		
@@ -69,11 +70,14 @@ class CorrBlock(object):
 					self.baz2.append(0)
 					self.baz1.append(0)
 
-
-		
+	
 
 	def run(self,output_file=None):
 
+
+		print('Working on station pairs:')
+		for sta in self.station_pairs:
+			print("{}--{}".format(sta[0],sta[1]))
 
 		t_0 = UTCDateTime(self.cfg.time_begin)
 		t_end = UTCDateTime(self.cfg.time_end)
@@ -85,6 +89,7 @@ class CorrBlock(object):
 		#all_objects = muppy.get_objects()
 		# Time loop
 		t = t_0
+		
 		while t <= t_end - (win_len_seconds - self.delta):
 			
 
@@ -104,6 +109,7 @@ class CorrBlock(object):
 			# - Apply preprocessing
 			for w in windows:
 				# - check minimum length requirement
+				# - ToDo: Add bandpass, glitch cap
 
 				if self.cfg.whiten:
 					w = whiten(w,self.cfg.white_freqmin,self.cfg.white_freqmax,self.cfg.white_taper)
@@ -156,15 +162,27 @@ class CorrBlock(object):
 					if tr2.stats.npts < min_len_samples:
 						continue
 
+					if True in np.isnan(tr1.data):
+						continue
+
+					if True in np.isnan(tr2.data):
+						continue
+
+					if True in np.isinf(tr1.data):
+						continue
+
+					if True in np.isinf(tr2.data):
+						continue
+
 
 					# - correlate
 					correlation = cross_covar(tr1.data,tr2.data,
-						max_lag_samples,False)[0]
+						max_lag_samples,self.cfg.corr_normalize)[0]
 					
 					# - add to stack
 					
-					#if len(correlation) == 2 * max_lag_samples + 1:
-					self._correlations[cp_name]._add_corr(correlation)
+					if len(correlation) == 2 * max_lag_samples + 1:
+						self._correlations[cp_name]._add_corr(correlation,t)
 					
 						
 
@@ -177,9 +195,8 @@ class CorrBlock(object):
 		# - Write results
 
 		for corr in self._correlations.itervalues():
-			fname =  name_correlation_file(corr.id1,corr.id2,'ccc',fmt='SAC')
-			fname = os.path.join('data','correlations',fname)
-			corr.write_stack(fname)
+			
+			corr.write_stack()
 
 		print('Finished a correlation block.')
 
@@ -210,7 +227,7 @@ class CorrBlock(object):
 	def update_data(self,t,win_len):
 
 		#print(self.data)
-		
+	
 
 		for trace in self.data:
 			
@@ -265,12 +282,46 @@ class CorrBlock(object):
 
 		self.data = Stream()
 		
+		
+
 		for channel in self.channels:
+			
 			
 			f = self.inv[channel].pop(0)
 			try:
 				self.data += read(f)
+				
 			except IOError:
 				print('** problems reading file %s' 
 				%self.inv.data[channel])
+
+
+
+	def get_prepstring(self):
+
+		prepstring = ''
+		if self.cfg.bandpass: 
+		    prepstring +='b'
+		else:
+		    prepstring += '-'
+		if self.cfg.cap_glitch: 
+		    prepstring += 'g'
+		else:
+		    prepstring += '-'    
+		if self.cfg.whiten: 
+		    prepstring += 'w'
+		else:
+		    prepstring += '-'
+		if self.cfg.onebit: 
+		    prepstring += 'o'
+		else:
+		    prepstring += '-'
+		if self.cfg.ram_norm: 
+		    prepstring += 'r'
+		else:
+		    prepstring += '-'
+
+		return prepstring
+		
+		
 

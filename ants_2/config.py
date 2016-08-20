@@ -172,11 +172,17 @@ DEFAULT_Correlation = {
     "corr_autocorr": False,
     "corr_type": "ccc",
     "corr_maxlag": 0,
+    "corr_normalize": True,
+    "interm_stack": None,
     "corr_tensorcomponents": ["ZZ"],
     "n_stationpairs": 1,
     "input_format": "MSEED",
     "locations_mix": False,
     "locations":[],
+    "cap_glitch": False,
+    "cap_thresh": 10.0,
+    "bandpass": False,
+    "bp_params": [],
     "whiten": False,
     "onebit": False,
     "ram_norm": False,
@@ -191,7 +197,10 @@ class ConfigCorrelation(object):
     def __init__(self):
         
         self.indirs = None
-        
+        self.bandpass = None
+        self.bp_params = None
+        self.cap_glitch = None
+        self.cap_thresh = None
         self.time_begin = None
         self.time_end = None
         self.time_overlap = None
@@ -201,8 +210,10 @@ class ConfigCorrelation(object):
         self.corr_maxlag = None
         self.corr_tensorcomponents = None
         self.corr_autocorr = None
+        self.corr_normalize = None
         self.input_format = None
         self.n_stationpairs = None
+        self.interm_stack = None
         self.locations_mix = None
         self.locations = None
         self.update = None

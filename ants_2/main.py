@@ -3,7 +3,7 @@ import sys
 import os
 import click
 import scripts
-from ants_2.config import ConfigDownload, ConfigPreprocess
+from ants_2.config import ConfigDownload, ConfigPreprocess, ConfigCorrelation
 
 
 @click.group()
@@ -37,6 +37,8 @@ def new_project():
     config = ConfigDownload()
     config.initialize()
     config = ConfigPreprocess()
+    config.initialize()
+    onfig = ConfigCorrelation()
     config.initialize()
     
     

@@ -252,8 +252,12 @@ class correlation_inventory(object):
                 block.channels.append(c[1])
         block.channels = list(set(block.channels))
 
+
+
         # Add file inventory for the channels in question
         inventory = {c: self.files[c] for c in block.channels}
         block.inventory = deepcopy(inventory)
 
-        self.blocks.append(block)
+        # No channels are found if updating, and those pairs have already been computed.
+        if block.channels != []: 
+            self.blocks.append(block)
