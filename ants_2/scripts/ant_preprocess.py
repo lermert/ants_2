@@ -101,9 +101,9 @@ def preprocess():
         try:
             prstr.prepare(cfg)
         except:
-            print('** Problems preparing stream: ',file=ofid)
-            print('** %s' %filepath,file=ofid)
-            continue
+           print('** Problems preparing stream: ',file=ofid)
+           print('** %s' %filepath,file=ofid)
+           continue
             
         try:
             prstr.process(cfg)

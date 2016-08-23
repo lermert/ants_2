@@ -119,7 +119,7 @@ def station_pairs(staids,n,autocorr):
 
             idprs.append((staids[i],staids[j]))
 
-    if len(idprs) < n:
+    if len(idprs) <= n:
         blcks_stations.append(idprs)
 
 

@@ -82,6 +82,7 @@ DEFAULT_Preprocess = {
     "wins_detrend":True,
     "wins_demean":True,
     "wins_taper":0.05,
+    "wins_taper_type":'cosine',
     "wins_cap":False,
     "wins_cap_threshold":15,
     "Fs_old":[],

@@ -58,7 +58,7 @@ class PrepStream(object):
 		if len(self.stream) == 0:
 			return()
 
-		if cfg.quality_trimfullsec:
+		if cfg.wins_trim:
 			if cfg.verbose:
 				print('* Trimming to full second', file = self.ofid)
 			self.stream = pp.trim_next_sec(self.stream,
