@@ -73,29 +73,39 @@ def plot_stations(proj,bluemarble):
 
 
 @run.command(help='Take a measurement on the data.')
-@click.argument('measure_type',help='Type of measurement.')
-@click.option('--speed',help='approx. wave speed')
+@click.argument('measure_type')
+@click.option('--speed',help='approx. wave speed in m/s')
+@click.option('--hw',help='window half width in seconds')
 @click.option('--window',help='window type',default='hann')
 @click.option('--plot',default=False)
+@click.option('--causal',default=True)
+@click.option('--sep_noise',default=1)
+@click.option('--overlap',default=False)
+def measure(measure_type,speed,hw,window,plot,causal,sep_noise,overlap):
+    from scripts.ant_measurement import measurement
+    measure_types = ['ln_energy_ratio','energy_diff']
 
-
-def run_measurement():
-
+    if measure_type not in measure_types:
+        print('Unrecognized measure_type. measure_type can be: ')
+        for t in measure_types:
+            print(t)
+        return()
     
-    mtype = measr_config['mtype']
-    
+    speed = float(speed)
+    hw = float(hw)
     # TODo all available misfits --  what parameters do they need (if any.)
-    if measr_config['mtype'] in ['ln_energy_ratio','energy_diff']:
+    if measure_type in ['ln_energy_ratio','energy_diff']:
+        # ToDo check whether speed and hw options are passed in.
         
 
-        g_speed                         =    measr_config['g_speed']
+        g_speed                         =    speed
         window_params                   =    {}
-        window_params['hw']             =    measr_config['window_params_hw']
-        window_params['sep_noise']      =    measr_config['window_params_sep_noise']
-        window_params['win_overlap']    =    measr_config['window_params_win_overlap']
-        window_params['wtype']          =    measr_config['window_params_wtype']
-        window_params['causal_side']    =    measr_config['window_params_causal']
-        window_params['plot']           =    measr_config['window_plot_measurements']
+        window_params['hw']             =    hw
+        window_params['sep_noise']      =    sep_noise
+        window_params['win_overlap']    =    overlap
+        window_params['wtype']          =    window
+        window_params['causal_side']    =    causal
+        window_params['plot']           =    plot
     
-    measurement(source_config,mtype,step,g_speed=g_speed,window_params=window_params)
+    measurement(measure_type,g_speed=g_speed,window_params=window_params)
     
