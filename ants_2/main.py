@@ -79,7 +79,6 @@ def plot_stations(proj,bluemarble):
 @click.option('--plot',default=False)
 
 
-
 def run_measurement():
 
     
