@@ -65,6 +65,38 @@ def correlation():
 
 
 @run.command(help='Plot stations for which data is available.')
-def plot_stations():
+@click.option('--bluemarble', default=False)
+@click.option('--proj',default='merc')
+def plot_stations(proj,bluemarble):
     from tools.plot import plot_stations
-    plot_stations()
+    plot_stations(projection=proj,bluemarble=bluemarble)
+
+
+@run.command(help='Take a measurement on the data.')
+@click.argument('measure_type',help='Type of measurement.')
+@click.option('--speed',help='approx. wave speed')
+@click.option('--window',help='window type',default='hann')
+@click.option('--plot',default=False)
+
+
+
+def run_measurement():
+
+    
+    mtype = measr_config['mtype']
+    
+    # TODo all available misfits --  what parameters do they need (if any.)
+    if measr_config['mtype'] in ['ln_energy_ratio','energy_diff']:
+        
+
+        g_speed                         =    measr_config['g_speed']
+        window_params                   =    {}
+        window_params['hw']             =    measr_config['window_params_hw']
+        window_params['sep_noise']      =    measr_config['window_params_sep_noise']
+        window_params['win_overlap']    =    measr_config['window_params_win_overlap']
+        window_params['wtype']          =    measr_config['window_params_wtype']
+        window_params['causal_side']    =    measr_config['window_params_causal']
+        window_params['plot']           =    measr_config['window_plot_measurements']
+    
+    measurement(source_config,mtype,step,g_speed=g_speed,window_params=window_params)
+    

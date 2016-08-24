@@ -361,10 +361,9 @@ class PrepStream(object):
 				trace.data = sosfilt(self.anti_alias,firstpass[::-1])[::-1]
 			else:
 				trace.data = sosfilt(self.anti_alias,trace.data)
-		print('filter')
+		
 		# Decimate if possible, otherwise interpolate
 		for Fs in cfg.Fs_new:
-			print(Fs)
 			Fs_old = self.stream[0].stats.sampling_rate
 
 

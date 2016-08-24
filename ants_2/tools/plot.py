@@ -142,6 +142,7 @@ def plot_converging_stack(inputfile,bandpass=None):
 	
 
 	ax2 = fig.add_subplot(211)
+	ax2.set_ylim([np.min(stack)*3,np.max(stack)*3])
 	line2, = ax2.plot(lag,stack)
 	text1 = ax2.set_title(str(cnt))
 
@@ -168,8 +169,8 @@ def plot_converging_stack(inputfile,bandpass=None):
 		ax1.set_ylim([np.min(stack)*1.5,np.max(stack)*1.5])
 		text1.set_text(str(cnt))
 
-		ax2.set_ylim([np.min(cwindow)*1.5,np.max(cwindow)*1.5])
-		#text2.set_text(key)
+		
+		
 
 		line1.set_ydata(stack)
 		line2.set_ydata(cwindow)
@@ -179,22 +180,17 @@ def plot_converging_stack(inputfile,bandpass=None):
 
 
 
-
-
-
-
-# Some sort of loop function to plot converging stack
-#if self.plot:
-#			lag = np.linspace(-cfg.corr_maxlag,cfg.corr_maxlag,max_lag_samples)
-#			plt.ion()
-#			fig = plt.figure()
-#			ax = fig.add_subplot(111)
-#			line1, = ax.plot(lag, np.zeros(max_lag_samples), '-') # Returns a tuple of line objects, thus the comma
-#			plot_pair = self.channel_pairs[0]
-#					
-#		
-#					if self.plot and cpair == plot_pair:
-#						line1.set_ydata(correlation)
-#						fig.canvas.draw()
-# 						
-# 
+def plot_window(correlation, window, measurement):
+    
+    
+    maxlag = correlation.stats.npts * correlation.stats.delta
+    lag = np.linspace(-maxlag,maxlag,correlation.stats.npts)
+    
+    plt.plot(lag,correlation.data/np.max(np.abs(correlation.data)))
+    plt.plot(lag,window/np.max(np.abs(window)),'--')
+    plt.title(correlation.id)
+    plt.text(0,-0.75,'Measurement value: %g' %measurement)
+    plt.xlabel('Correlation Lag in seconds.')
+    plt.ylabel('Normalized correlation and window.')
+    
+    plt.show()
