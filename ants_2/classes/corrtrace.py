@@ -25,7 +25,33 @@ class CorrTrace(object):
 		self.cnt_int = 0
 		self.id1   = cha1
 		self.id2   = cha2
-		self.id    = cha1 + '--' + cha2
+
+		if self.id1[-1] == 'E':
+			cha = self.id1.split('.')[-1]
+			cha = cha[0] + cha [1] + 'T'
+			inf = self.id1.split('.')
+			self.id1 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
+
+		if self.id1[-1] == 'N':
+			cha = self.id1.split('.')[-1]
+			cha = cha[0] + cha [1] + 'R'
+			inf = self.id1.split('.')
+			self.id1 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
+
+		if self.id2[-1] == 'E':
+			cha = self.id2.split('.')[-1]
+			cha = cha[0] + cha [1] + 'T'
+			inf = self.id2.split('.')
+			self.id2 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
+
+		if self.id2[-1] == 'N':
+			cha = self.id2.split('.')[-1]
+			cha = cha[0] + cha [1] + 'R'
+			inf = self.id2.split('.')
+			self.id2 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
+
+
+		self.id    = self.id1 + '--' + self.id2
 		self.corr_type = corr_type
 
 		self.stack.stats.sampling_rate = sampling_rate

@@ -55,7 +55,7 @@ class CorrBlock(object):
 
 
 		
-		if any(i in cfg.corr_tensorcomponents for i in horizontals):
+		if any([i in cfg.corr_tensorcomponents for i in horizontals]):
 
 			self.baz1 = []
 			self.baz2 = []
@@ -137,7 +137,7 @@ class CorrBlock(object):
 				# - if horizontal components are involved, copy and rotate
 				if any([i in self.cfg.corr_tensorcomponents for i in horizontals]):
 
-					str1, str2 = self.rotate(str1,str2,baz1[sp_i],baz2[sp_i])
+					str1, str2 = self.rotate(str1,str2,self.baz1[sp_i],self.baz2[sp_i])
 
 				# - channel loop
 				

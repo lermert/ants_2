@@ -72,7 +72,7 @@ class PrepStream(object):
 				print('* Slicing stream', file = self.ofid)
 			
 			self.stream = pp.slice_traces(self.stream,
-				cfg.wins_len_sec,cfg.quality_minlensec,
+				cfg.wins_len_sec,cfg.quality_minlengthsec,
 				cfg.verbose,self.ofid)
 		
 		if len(self.stream) == 0:

@@ -71,6 +71,7 @@ for locations \'\',00,10.' %i
 		else:
 			stations.append(station)
 	
+	fig = plt.figure()
 
 	# xmin, xmax, ymin, ymax and central meridian of map
 	mid_merid = (max(lons) - min(lons)) * 0.5

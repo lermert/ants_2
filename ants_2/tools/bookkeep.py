@@ -166,6 +166,30 @@ def channel_pairs(channels1,channels2,cfg):
                 continue
 
             comp = c1[-1] + c2[-1]
+            
+            if comp == 'EE':
+                comp = 'TT'
+
+            if comp == 'NN':
+                comp = 'RR'
+
+            if comp == 'EN':
+                comp = 'TR'
+
+            if comp == 'NE':
+                comp = 'RT'
+
+            if comp == 'NZ':
+                comp = 'RZ'
+
+            if comp == 'ZN':
+                comp = 'ZR'
+
+            if comp == 'EZ':
+                comp = 'TZ'
+
+            if comp == 'ZE':
+                comp = 'ZT'
 
             if comp in tensor_comp:
                 channels.append((c1,c2))

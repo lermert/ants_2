@@ -39,8 +39,7 @@ def measurement(mtype,**options):
     options: g_speed,window_params (only needed if mtype is ln_energy_ratio or enery_diff)
     """
     
-    files = [f for f in os.listdir(os.path.join('data','correlations','*.SAC')) ]
-    files = [os.path.join('data','correlations',f) for f in files]
+    
     files = glob(os.path.join('data','correlations','*.SAC'))
     
     
@@ -86,5 +85,5 @@ def measurement(mtype,**options):
             i+=1
     
     filename = '{}.measurement.csv'.format(mtype)
-    measurements.to_csv(os.path.join(data,filename),index=None)
+    measurements.to_csv(os.path.join('data',filename),index=None)
 
