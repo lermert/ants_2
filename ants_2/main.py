@@ -4,7 +4,9 @@ import os
 import click
 import scripts
 from ants_2.config import ConfigDownload, ConfigPreprocess, ConfigCorrelation
+import warnings
 
+warnings.simplefilter("ignore")
 
 @click.group()
 def run():
@@ -74,6 +76,7 @@ def plot_stations(proj,bluemarble):
 
 @run.command(help='Take a measurement on the data.')
 @click.argument('measure_type')
+@click.option('--bandpass',help='Filter before measurement',default=None)
 @click.option('--speed',help='approx. wave speed in m/s')
 @click.option('--hw',help='window half width in seconds')
 @click.option('--window',help='window type',default='hann')
@@ -81,7 +84,7 @@ def plot_stations(proj,bluemarble):
 @click.option('--causal',default=True)
 @click.option('--sep_noise',default=1)
 @click.option('--overlap',default=False)
-def measure(measure_type,speed,hw,window,plot,causal,sep_noise,overlap):
+def measure(measure_type,bandpass,speed,hw,window,plot,causal,sep_noise,overlap):
     from scripts.ant_measurement import measurement
     measure_types = ['ln_energy_ratio','energy_diff']
 
@@ -90,22 +93,28 @@ def measure(measure_type,speed,hw,window,plot,causal,sep_noise,overlap):
         for t in measure_types:
             print(t)
         return()
+
+
+    if isinstance(bandpass,unicode):
+
+        filt = [float(f) for f in bandpass.split(',')]
+        print("Filtering between %g and %g Hz." %(filt[0],filt[1]))
+
     
-    speed = float(speed)
-    hw = float(hw)
+    
     # TODo all available misfits --  what parameters do they need (if any.)
     if measure_type in ['ln_energy_ratio','energy_diff']:
         # ToDo check whether speed and hw options are passed in.
         
 
-        g_speed                         =    speed
+        g_speed                         =    float(speed)
         window_params                   =    {}
-        window_params['hw']             =    hw
-        window_params['sep_noise']      =    sep_noise
-        window_params['win_overlap']    =    overlap
+        window_params['hw']             =    float(hw)
+        window_params['sep_noise']      =    int(sep_noise)
+        window_params['win_overlap']    =    bool(overlap)
         window_params['wtype']          =    window
-        window_params['causal_side']    =    causal
-        window_params['plot']           =    plot
+        window_params['causal_side']    =    bool(causal)
+        window_params['plot']           =    bool(plot)
     
-    measurement(measure_type,g_speed=g_speed,window_params=window_params)
+    measurement(measure_type,filt=filt,g_speed=g_speed,window_params=window_params)
     

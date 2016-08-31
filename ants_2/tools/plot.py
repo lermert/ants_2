@@ -1,6 +1,7 @@
 
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
+import matplotlib.tri as tri
 from numpy import arange
 import os
 import h5py
@@ -181,6 +182,9 @@ def plot_converging_stack(inputfile,bandpass=None):
 
 
 
+
+
+
 def plot_window(correlation, window, measurement):
     
     
@@ -195,3 +199,48 @@ def plot_window(correlation, window, measurement):
     plt.ylabel('Normalized correlation and window.')
     
     plt.show()
+
+
+
+def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
+	vmax=1.2,outfile=None,title=None,shade='flat',cmap='div'):
+
+
+	if cmap == 'seq':
+		cmap = plt.cm.BuGn
+
+	elif cmap == 'div':
+		cmap = plt.cm.bwr
+
+	m = Basemap(rsphere=6378137,resolution='c',projection='cyl',
+	llcrnrlat=np.min(map_y),urcrnrlat=np.max(map_y),
+	llcrnrlon=np.min(map_x),urcrnrlon=np.max(map_x))
+
+	
+	triangles = tri.Triangulation(map_x,map_y)
+
+	# tripcolor plot.
+	plt.figure()
+	plt.subplot(111)
+	plt.gca().set_aspect('equal')
+
+	if title is not None:
+		plt.title(title)
+
+	plt.tripcolor(triangles, map_z/np.max(np.abs(map_z)),
+		shading=shade, vmin=vmin,vmax=vmax, cmap=cmap)
+
+
+	m.colorbar(location='bottom')
+	m.drawcoastlines(linewidth=0.5)
+	m.drawparallels(np.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
+	m.drawmeridians(np.arange(-180,210,60.),labels=[0,0,0,1]) # draw meridians
+
+	#draw station locations
+	for sta in stations:
+		m.plot(sta[0],sta[1],'rv',latlon=True)
+
+	if outfile is None:
+		plt.show()
+	else:
+		plt.savefig(outfile,format='png')

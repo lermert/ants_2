@@ -123,6 +123,7 @@ class ConfigPreprocess(object):
         self.wins_detrend = None
         self.wins_demean = None
         self.wins_taper = None
+        self.wins_taper_type = None
         self.wins_cap = None
         self.wins_cap_threshold = None
         

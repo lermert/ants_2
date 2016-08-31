@@ -49,8 +49,7 @@ def get_window(stats,g_speed,params):
     # Properties of trace
     s_0 = int((stats.npts-1)/2)
     dist = stats.sac.dist
-    print type(dist)
-    print type(g_speed)
+    
     Fs = stats.sampling_rate
     n = stats.npts
     
@@ -58,7 +57,7 @@ def get_window(stats,g_speed,params):
     ind_lo = int((dist/g_speed - params['hw'])*Fs) + s_0
     ind_hi = int((dist/g_speed + params['hw'])*Fs) + s_0
     ind_lo_n = ind_hi + int(params['sep_noise']*params['hw']*Fs)
-    ind_hi_n = ind_lo + int(2*params['hw']*Fs)
+    ind_hi_n = ind_lo_n + int(2*params['hw']*Fs)
     
     
     # Checks..overlap, out of bounds
@@ -81,6 +80,7 @@ def get_window(stats,g_speed,params):
 def window(wtype,n,i0,i1):
     win = np.zeros(n)
     
+    
     if wtype == None:
         win += 1.
     elif wtype == 'boxcar':
@@ -93,7 +93,10 @@ def window(wtype,n,i0,i1):
     return win
 
 
+  
+
 def snratio(correlation,g_speed,window_params):
+
     window = get_window(correlation.stats,g_speed,window_params)
     
     if not window_params['causal_side']:
@@ -107,6 +110,7 @@ def snratio(correlation,g_speed,window_params):
         signl = np.sum((win_s * correlation.data)**2)
         noise = np.sum((win_n * correlation.data)**2)
         
+       
         snr = signl/(noise+np.finfo(noise).tiny)
         
     else:

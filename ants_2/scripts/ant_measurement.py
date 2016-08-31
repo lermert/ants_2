@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
-from math import log, pi
+from math import log, pi, isnan
 import click
 import json
 from scipy.signal import hilbert
@@ -32,7 +32,7 @@ def get_station_info(stats):
 
      
 
-def measurement(mtype,**options):
+def measurement(mtype,filt,**options):
     
     """
     Get measurements on noise correlation data and synthetics. 
@@ -63,9 +63,12 @@ def measurement(mtype,**options):
 
             except:
                 print('\nCould not read data: '+os.path.basename(f))
-                i+=1
                 continue
            
+            # Filter
+            if filt is not None:
+                tr_o.filter('bandpass',freqmin=filt[0],freqmax=filt[1],
+                    corners=filt[2],zerophase=True)
             
             # Get all the necessary information
             info = get_station_info(tr_o.stats)
@@ -76,13 +79,15 @@ def measurement(mtype,**options):
             msr_o = func(tr_o,**options)
             msr = msr_o
             snr = snratio(tr_o,**options)
-            
-            
-            info.extend([msr,snr])
-            measurements.loc[i] = info
 
-            # step index
-            i+=1
+            if isnan(msr):
+                continue
+            else:
+                info.extend([msr,snr])
+                measurements.loc[i] = info
+
+                # step index
+                i+=1
     
     filename = '{}.measurement.csv'.format(mtype)
     measurements.to_csv(os.path.join('data',filename),index=None)

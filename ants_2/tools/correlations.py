@@ -103,7 +103,7 @@ def cross_covar(data1, data2, max_lag_samples, normalize, params=False):
 
 
     # scipy.fftconvolve is way faster than np.correlate, and zeropads for non-circular convolution
-    ccv = fftconvolve(data1,data2[::-1],mode='same')
+    ccv = fftconvolve(data1[::-1],data2,mode='same')
 
     #if normalize:
     #    ccv /= (scale1*scale2) 

@@ -4,29 +4,6 @@ from math import pi, log
 from ants_2.tools.windows import get_window
 from ants_2.tools.plot import plot_window     
      
-        
-def snratio(correlation,g_speed,window_params):
-    window = get_window(correlation.stats,g_speed,window_params)
-    
-    if not window_params['causal_side']:
-        win_s = window[0][::-1]
-        win_n = window[1][::-1]
-    else:
-        win_s = window[0]
-        win_n = window[1]
-        
-    if window[2]:
-        signl = np.sum((win_s * correlation.data)**2)
-        noise = np.sum((win_n * correlation.data)**2)
-        
-        snr = signl/(noise+np.finfo(noise).tiny)
-        
-    else:
-        snr = np.nan
-    return snr  
-
-    
-
 
 def envelope(correlation,plot=False):
     
@@ -74,7 +51,14 @@ def log_en_ratio(correlation,g_speed,window_params):
     if window[2]:
         E_plus = np.trapz((correlation.data * win)**2) * delta
         E_minus = np.trapz((correlation.data * win[::-1])**2) * delta
-        msr = log(E_plus/(E_minus+np.finfo(E_minus).tiny))
+
+        E_ratio = E_plus/(E_minus+np.finfo(E_minus).tiny)
+
+        if E_ratio <= 0:
+            msr = np.nan
+        else:
+            msr = log(E_ratio)
+
         if window_params['plot']:
             plot_window(correlation,win,msr)
     else:
