@@ -142,6 +142,38 @@ def measure(measure_type,bandpass,speed,hw,window,plot,causal,sep_noise,overlap)
 
 
 #==============================================================================
+# Determining a source map from a csv file
+#==============================================================================
+
+
+@run.command(help='Plot measured log energy ratios on a map using ray-theoretical kernels')
+@click.option('--f',help='Central frequency in Hz')
+@click.option('--speed',help='approx. wave speed in m/s')
+@click.option('--q',help='Quality factor of surface wave dispersion')
+@click.option('--ray_step',help='discretizing step of ray in m',default=1e5)
+@click.option('--bin_size',help='Geographic bin size in degree',default=5.)
+def sourcemap(f,speed,q,ray_step,bin_size):
+
+
+    ray_step = float(ray_step) / 1000.
+    speed = float(speed)
+    f = float(f)
+    q = float(q)
+    bin_size = float(bin_size)
+
+    if not os.path.exists('data/ln_energy_ratio.measurement.csv'):
+        msg = 'Source maps can currently only be created from file ln_energy_ratio.csv. Run ants measure ln_energy_ratio to obtain this file.'
+        raise NotImplementedError(msg)
+
+    from ants_2.scripts.ant_sourceimaging import sourcemap
+    s = sourcemap('data/ln_energy_ratio.measurement.csv',speed,f,q,ray_step)
+    s._temp_kernels()
+    s._bin_kernels(bin_size,bin_size)
+    s.plot_sourcemap()
+
+
+
+#==============================================================================
 # Plotting
 #==============================================================================
 
