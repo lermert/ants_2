@@ -61,7 +61,7 @@ def log_en_ratio(correlation,g_speed,window_params):
 
         if window_params['plot']:
             wins = win + win[::-1]
-            winn = win[1] + win1[::-1]
+            winn = win[1] + win[::-1]
             plot_window(correlation,wins,msr,winn)
     else:
         msr = np.nan
