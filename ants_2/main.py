@@ -101,7 +101,7 @@ def correlation():
 @click.option('--speed',help='approx. wave speed in m/s')
 @click.option('--hw',help='window half width in seconds')
 @click.option('--window',help='window type',default='hann')
-@click.option('--plot',help='show plots of the correlations',default=False)
+@click.option('--plot',help='show plots of the correlations',is_flag=True)
 @click.option('--causal',help='In case of using energy_diff measurement, this option selects causal or acausal branch of the correlation',default=True)
 @click.option('--sep_noise',help='separation of noise window behind signal window as a multiple of the chosen window halfwidth',default=1)
 @click.option('--overlap',help='If set to True, measurements will be taken also if causal and acausal window overlap',default=False)
@@ -118,7 +118,7 @@ def measure(measure_type,bandpass,speed,hw,window,plot,causal,sep_noise,overlap)
 
     if isinstance(bandpass,unicode):
 
-        filt = [float(f) for f in bandpass.split(',')]
+        bandpass = [float(f) for f in bandpass.split(',')]
         print("Filtering between %g and %g Hz." %(filt[0],filt[1]))
 
     
@@ -137,7 +137,7 @@ def measure(measure_type,bandpass,speed,hw,window,plot,causal,sep_noise,overlap)
         window_params['causal_side']    =    bool(causal)
         window_params['plot']           =    bool(plot)
     
-    measurement(measure_type,filt=filt,g_speed=g_speed,window_params=window_params)
+    measurement(measure_type,filt=bandpass,g_speed=g_speed,window_params=window_params)
 
 
 
@@ -150,7 +150,7 @@ def plot():
     pass
     
 @plot.command(help='Plot station map')
-@click.option('--bluemarble',help='Plot fancy map background', is_flag=True)
+@click.option('--bluemarble',help='Plot map background', is_flag=True)
 @click.option('--proj',help='Selects matplotlib projection',default='merc',type=str)
 def station_map(proj,bluemarble):
 
@@ -205,7 +205,7 @@ def section(directory,bandpass):
            print('Bandpass format must be: freqmin,freqmax,order')
            bandpass = None
     from tools.plot import plot_section
-    plot_section(d,bandpass)
+    plot_section(directory,bandpass)
 
 
 

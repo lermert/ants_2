@@ -23,7 +23,7 @@ class stainfo(object):
 		self.lat = None
 		self.lon = None
 
-def plot_stations(projection='merc',data='raw',
+def plot_stations(projection='merc',dir='processed',
 	channels=['BHZ','LHZ'],locations = ['','00','10'],bluemarble=False):
 
 
@@ -130,6 +130,15 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 	stack = f['corr_windows'].keys()[0]
 	stack = f['corr_windows'][stack][:]
 
+
+	if bandpass is not None:
+		sos = get_bandpass(df=Fs,freqmin=bandpass[0],
+			freqmax=bandpass[1],
+			corners=bandpass[2])
+		firstpass = sosfilt(sos, stack)
+		stack =  sosfilt(sos, firstpass[::-1])[::-1]
+
+
 	# display a counter for stacked windows
 	cnt = 1
 
@@ -154,14 +163,9 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 	line2, = ax2.plot(lag,stack)
 	text1 = ax2.set_title(str(cnt))
 
-	if bandpass is not None:
-		sos = get_bandpass(df=Fs,freqmin=bandpass[0],
-			freqmax=bandpass[1],
-			corners=bandpass[2])
-		firstpass = sosfilt(sos, stack)
-		stack =  sosfilt(sos, firstpass[::-1])[::-1]
-
 	
+
+	plt.show()	
 
 	for key in f['corr_windows'].keys():
 
@@ -187,6 +191,8 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 		cnt += 1
 		if pause > 0:
 			time.sleep(pause)
+
+
 
 
 def plot_correlation(f, bandpass=None):
@@ -246,18 +252,22 @@ def plot_section(pathname,bandpass=None,fmt='SAC'):
 
 
 
-def plot_window(correlation, window, measurement):
+def plot_window(correlation, window, measurement,win_noise=None):
     
     
     maxlag = correlation.stats.npts * correlation.stats.delta
     lag = np.linspace(-maxlag,maxlag,correlation.stats.npts)
     
     plt.plot(lag,correlation.data/np.max(np.abs(correlation.data)))
-    plt.plot(lag,window/np.max(np.abs(window)),'--')
+    plt.plot(lag,window/np.max(np.abs(window)),'--',linewidth=1.5)
+    if win_noise is not None:
+    	plt.plot(lag,win_noise,'--',linewidth=1.5)
+
+	plt.legend(['data','signal window','noise window'])
     plt.title(correlation.id)
     plt.text(0,-0.75,'Measurement value: %g' %measurement)
     plt.xlabel('Correlation Lag in seconds.')
-    plt.ylabel('Normalized correlation and window.')
+    plt.ylabel('Normalized correlation and window(s).')
     
     plt.show()
 

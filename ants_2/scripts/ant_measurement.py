@@ -8,7 +8,6 @@ from scipy.signal import hilbert
 from glob import glob
 from obspy import read, Trace
 from obspy.geodetics import gps2dist_azimuth
-import matplotlib.pyplot as plt
 from ants_2.tools import measurements as rm
 from ants_2.tools.windows import get_window, my_centered, snratio
 

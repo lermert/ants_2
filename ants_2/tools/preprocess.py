@@ -70,7 +70,7 @@ def whiten_taper(freq1,freq2,df,npts,taper_width):
 
 
 def whiten(tr,freq1,freq2,taper_width):
-    # ToDo check fft here
+    # ToDo check fft here - zeropadding would make this much faster.
     
     # Build a cosine taper for the frequency domain
     df = 1/(tr.stats.npts*tr.stats.delta)
