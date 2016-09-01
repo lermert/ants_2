@@ -119,7 +119,7 @@ def measure(measure_type,bandpass,speed,hw,window,plot,causal,sep_noise,overlap)
     if isinstance(bandpass,unicode):
 
         bandpass = [float(f) for f in bandpass.split(',')]
-        print("Filtering between %g and %g Hz." %(filt[0],filt[1]))
+        print("Filtering between %g and %g Hz." %(bandpass[0],bandpass[1]))
 
     
     

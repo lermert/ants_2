@@ -23,7 +23,7 @@ class stainfo(object):
 		self.lat = None
 		self.lon = None
 
-def plot_stations(projection='merc',dir='processed',
+def plot_stations(projection='merc',data='processed',
 	channels=['BHZ','LHZ'],locations = ['','00','10'],bluemarble=False):
 
 
@@ -129,8 +129,11 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 
 	stack = f['corr_windows'].keys()[0]
 	stack = f['corr_windows'][stack][:]
-
-
+	stats = f['stats']
+	Fs = stats.attrs['sampling_rate']
+	cha1 = stats.attrs['channel1']
+	cha2 = stats.attrs['channel2']
+	
 	if bandpass is not None:
 		sos = get_bandpass(df=Fs,freqmin=bandpass[0],
 			freqmax=bandpass[1],
@@ -142,10 +145,7 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 	# display a counter for stacked windows
 	cnt = 1
 
-	stats = f['stats']
-	Fs = stats.attrs['sampling_rate']
-	cha1 = stats.attrs['channel1']
-	cha2 = stats.attrs['channel2']
+	
 	max_lag = ((len(stack) - 1) / 2) / Fs
 	lag = np.linspace(-max_lag,max_lag,len(stack))
 
