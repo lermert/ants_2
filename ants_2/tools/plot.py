@@ -78,13 +78,32 @@ for locations \'\',00,10.' %i
 	
 	fig = plt.figure()
 
+
+	# if min(lons) < 0:
+	# 	lons += 180.
+	# 	shift_lons = True
+	# if min(lats) < 0:
+	# 	lats += 90.
+	# 	shift_lats = True
+
 	# xmin, xmax, ymin, ymax and central meridian of map
+	xmin = min(lons) - 10 
+	if xmin < -180:
+		xmin = -180.
+	xmax = max(lons) + 10
+	if xmax > 180.:
+		xmax = 180.
+	ymin = min(lats) - 5
+	if ymin < -90.:
+		ymin = -90.
+	ymax = max(lats) + 5
+	if ymax > 90.:
+		ymax = 90.
+
+
 	mid_merid = (max(lons) - min(lons)) * 0.5
 	mid_paral = (max(lats) - min(lats)) * 0.5
-	xmin = min(lons) - 10
-	xmax = max(lons) + 10
-	ymin = min(lats) - 5
-	ymax = max(lats) + 5
+	
 
 	# basemap
 	m = Basemap(rsphere=6378137,
@@ -114,7 +133,8 @@ for locations \'\',00,10.' %i
 
 	# plot stations on map
 	for sta in stations:
-		print sta.id
+		
+
 		m.plot(sta.lon,sta.lat,'rv',markersize=12.,latlon=True)
 		x, y = m(sta.lon,sta.lat)
 		plt.text(x,y,'   '+sta.id,fontweight='bold',color=textcol)
@@ -133,7 +153,7 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 	Fs = stats.attrs['sampling_rate']
 	cha1 = stats.attrs['channel1']
 	cha2 = stats.attrs['channel2']
-	
+
 	if bandpass is not None:
 		sos = get_bandpass(df=Fs,freqmin=bandpass[0],
 			freqmax=bandpass[1],

@@ -9,13 +9,14 @@ from ants_2.tools.plot import plot_grid
 
 class sourcemap(object):
 
-	def __init__(self,csvfile,v,f,q,seg_km):
+	def __init__(self,csvfile,v,f,q,seg_km,min_snr=0.):
 
 		self.v = v
 		self.f = f
 		self.q = q
 		self.w = 2 * pi * f
 		self.seg_km = seg_km
+		self.min_snr = min_snr
 
 		self.data = pd.read_csv(csvfile)
 
@@ -105,7 +106,10 @@ class sourcemap(object):
 			lon1 = self.data.at[i,'lon1']
 			lat2 = self.data.at[i,'lat2']
 			lon2 = self.data.at[i,'lon2']
+			snr  = self.data.at[i,'snr']
 
+			if snr < self.min_snr:
+				continue
 
 			# determine antipode of midpoint
 			# find midpoint

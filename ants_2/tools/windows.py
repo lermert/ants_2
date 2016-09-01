@@ -45,31 +45,40 @@ def get_window(stats,g_speed,params):
     params: dictionary containing 'hw' halfwidth in seconds, 'sep_noise' separation of noise window in multiples of halfwidth,
     'wtype' window type (None,boxcar, hanning), 'overlap' may signal windows overlap (Boolean)
     """
-    
     # Properties of trace
     s_0 = int((stats.npts-1)/2)
     dist = stats.sac.dist
     
     Fs = stats.sampling_rate
     n = stats.npts
-    
-    # Find indices for window bounds
-    ind_lo = int((dist/g_speed - params['hw'])*Fs) + s_0
-    ind_hi = int((dist/g_speed + params['hw'])*Fs) + s_0
-    ind_lo_n = ind_hi + int(params['sep_noise']*params['hw']*Fs)
-    ind_hi_n = ind_lo_n + int(2*params['hw']*Fs)
-    
+
+    if g_speed is not None and params['hw'] is not None:
+        
+        # Find indices for window bounds
+        ind_lo = int((dist/g_speed - params['hw'])*Fs) + s_0
+        ind_hi = int((dist/g_speed + params['hw'])*Fs) + s_0
+        ind_lo_n = ind_hi + int(params['sep_noise']*params['hw']*Fs)
+        ind_hi_n = ind_lo_n + int(2*params['hw']*Fs)
+
+    else:
+
+        ind_lo = s_0
+        ind_hi = n - 1
+        ind_lo_n = s_0
+        ind_hi_n = n-1
+        
     
     # Checks..overlap, out of bounds
     scs = window_checks(ind_lo,ind_hi,ind_lo_n,ind_hi_n,n,params['win_overlap'])
     
     if scs:
+        
         # Fill signal window
         win_signal = window(params['wtype'],n,ind_lo,ind_hi)
         # Fill noise window
         win_noise = window(params['wtype'],n,ind_lo_n,ind_hi_n)
     
- 
+       
         return win_signal, win_noise, scs
 
     else:

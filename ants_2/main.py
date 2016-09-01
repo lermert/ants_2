@@ -92,29 +92,33 @@ def correlation():
 
 
 #==============================================================================
-# Measurement
+# Measurements
 #==============================================================================
 
-@run.command(help='Take a measurement on the data')
-@click.argument('measure_type')
+@run.group(help='Take a measurement on the data.')
+def measure():
+    pass
+
+
+@measure.command()
 @click.option('--bandpass',help='Filter before measurement',default=None)
-@click.option('--speed',help='approx. wave speed in m/s')
-@click.option('--hw',help='window half width in seconds')
+@click.option('--speed',help='approx. wave speed in m/s',default=None)
+@click.option('--hw',help='window half width in seconds',default=None)
 @click.option('--window',help='window type',default='hann')
 @click.option('--plot',help='show plots of the correlations',is_flag=True)
-@click.option('--causal',help='In case of using energy_diff measurement, this option selects causal or acausal branch of the correlation',default=True)
 @click.option('--sep_noise',help='separation of noise window behind signal window as a multiple of the chosen window halfwidth',default=1)
-@click.option('--overlap',help='If set to True, measurements will be taken also if causal and acausal window overlap',default=False)
-def measure(measure_type,bandpass,speed,hw,window,plot,causal,sep_noise,overlap):
+@click.option('--overlap',help='If set to True, measurements will be taken even if causal and acausal window overlap',default=False)
+
+def ln_energy_ratio(bandpass,speed,hw,window,plot,sep_noise,overlap):
+    """
+
+    Measure logarithmic energy ratio.
+    
+    Example: ants measure --speed 3000.0 --hw 100 --bandpass 0.1,0.2,4
+    """
+
     from scripts.ant_measurement import measurement
-    measure_types = ['ln_energy_ratio','energy_diff']
-
-    if measure_type not in measure_types:
-        print('Unrecognized measure_type. measure_type can be: ')
-        for t in measure_types:
-            print(t)
-        return()
-
+    
 
     if isinstance(bandpass,unicode):
 
@@ -124,36 +128,47 @@ def measure(measure_type,bandpass,speed,hw,window,plot,causal,sep_noise,overlap)
     
     
     # TODo all available misfits --  what parameters do they need (if any.)
-    if measure_type in ['ln_energy_ratio','energy_diff']:
-        # ToDo check whether speed and hw options are passed in.
-        
-
-        g_speed                         =    float(speed)
-        window_params                   =    {}
-        window_params['hw']             =    float(hw)
-        window_params['sep_noise']      =    int(sep_noise)
-        window_params['win_overlap']    =    bool(overlap)
-        window_params['wtype']          =    window
-        window_params['causal_side']    =    bool(causal)
-        window_params['plot']           =    bool(plot)
     
-    measurement(measure_type,filt=bandpass,g_speed=g_speed,window_params=window_params)
+        
+    if speed is not None:
+        speed                           =    float(speed)
 
+    window_params                       =    {}
 
+    if hw is not None:
+        window_params['hw']             =    float(hw)
+    else:
+        window_params['hw']             =    hw
+
+    window_params['sep_noise']          =    int(sep_noise)
+    window_params['win_overlap']        =    bool(overlap)
+    window_params['wtype']              =    window
+    window_params['plot']               =    bool(plot)
+    window_params['causal_side']        =    True
+    
+    measurement(mtype='ln_energy_ratio',filt=bandpass,g_speed=speed,window_params=window_params)
+
+#@click.option('--causal',help='In case of using energy_diff measurement, this option selects causal or acausal branch of the correlation',default=True)
 
 #==============================================================================
 # Determining a source map from a csv file
 #==============================================================================
 
 
-@run.command(help='Plot measured log energy ratios on a map using ray-theoretical kernels')
+@run.command()
 @click.option('--f',help='Central frequency in Hz')
 @click.option('--speed',help='approx. wave speed in m/s')
 @click.option('--q',help='Quality factor of surface wave dispersion')
+
 @click.option('--ray_step',help='discretizing step of ray in m',default=1e5)
 @click.option('--bin_size',help='Geographic bin size in degree',default=5.)
-def sourcemap(f,speed,q,ray_step,bin_size):
+@click.option('--min_snr',help='Minimum signal to noise ratio for meausurements',default=0.0)
+def sourcemap(f,speed,q,ray_step,bin_size,min_snr):
+    """
+    Plot measured log energy ratios on a map using ray-theoretical kernels.
 
+    Example: ants sourcemap --f 0.14 --speed 3000 --q 120
+    """
 
     ray_step = float(ray_step) / 1000.
     speed = float(speed)
@@ -177,7 +192,7 @@ def sourcemap(f,speed,q,ray_step,bin_size):
 # Plotting
 #==============================================================================
 
-@run.group()
+@run.group(help='Various plotting functions')
 def plot():
     pass
     
