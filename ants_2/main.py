@@ -16,6 +16,17 @@ def run():
     pass
     
 
+
+@run.command(help='Print directory where ants code is located.')
+def show_root():
+    from . import _ROOT
+    print(_ROOT)
+
+
+#==============================================================================
+# Setup of the directory structure
+#==============================================================================
+
 @run.command(help='Initialize folder for a new project.')
 def new_project():
     if not os.listdir('.')==[]:
@@ -34,8 +45,9 @@ def new_project():
     os.mkdir(os.path.join('.','ants_code'))
     
     
-    os.system('cp -r {} ants_code/'.format(os.path.join(_ROOT,'scripts')))
-    os.system('cp -r {} ants_code/'.format(os.path.join(_ROOT,'tools')))
+    os.system('cp -r {} ants_code/'.format(_ROOT))
+    
+
     config = ConfigDownload()
     config.initialize()
     config = ConfigPreprocess()
@@ -48,42 +60,51 @@ def new_project():
     
     click.secho('All the input files were copied to ./input, please edit!',color='g')
    
-@run.command(help='Download data from IRIS or Arclink or both.\nEdit input file\
+#==============================================================================
+# Data download
+#==============================================================================
+
+@run.command(help='Download data, input file\
 input/config_download.json')
 def download():
     from scripts.ant_download import ant_download
     ant_download()
 
-@run.command(help='Instrument correction and other preprocessing.')
+#==============================================================================
+# Preprocessing
+#==============================================================================
+
+@run.command(help='Remove instrument response, input file input/config_preprocess.json')
 def preprocess():
     from scripts.ant_preprocess import preprocess
     preprocess()
     
+#==============================================================================
+# Correlation
+#==============================================================================
 
-@run.command(help='Correlation')
+@run.command(help='Correlation, input file input/config_correlation.json')
 def correlation():
     from scripts.ant_correlation import correlate
     correlate()
 
 
-@run.command(help='Plot stations for which data is available.')
-@click.option('--bluemarble', default=False)
-@click.option('--proj',default='merc')
-def plot_stations(proj,bluemarble):
-    from tools.plot import plot_stations
-    plot_stations(projection=proj,bluemarble=bluemarble)
 
 
-@run.command(help='Take a measurement on the data.')
+#==============================================================================
+# Measurement
+#==============================================================================
+
+@run.command(help='Take a measurement on the data')
 @click.argument('measure_type')
 @click.option('--bandpass',help='Filter before measurement',default=None)
 @click.option('--speed',help='approx. wave speed in m/s')
 @click.option('--hw',help='window half width in seconds')
 @click.option('--window',help='window type',default='hann')
-@click.option('--plot',default=False)
-@click.option('--causal',default=True)
-@click.option('--sep_noise',default=1)
-@click.option('--overlap',default=False)
+@click.option('--plot',help='show plots of the correlations',default=False)
+@click.option('--causal',help='In case of using energy_diff measurement, this option selects causal or acausal branch of the correlation',default=True)
+@click.option('--sep_noise',help='separation of noise window behind signal window as a multiple of the chosen window halfwidth',default=1)
+@click.option('--overlap',help='If set to True, measurements will be taken also if causal and acausal window overlap',default=False)
 def measure(measure_type,bandpass,speed,hw,window,plot,causal,sep_noise,overlap):
     from scripts.ant_measurement import measurement
     measure_types = ['ln_energy_ratio','energy_diff']
@@ -117,4 +138,77 @@ def measure(measure_type,bandpass,speed,hw,window,plot,causal,sep_noise,overlap)
         window_params['plot']           =    bool(plot)
     
     measurement(measure_type,filt=filt,g_speed=g_speed,window_params=window_params)
+
+
+
+#==============================================================================
+# Plotting
+#==============================================================================
+
+@run.group()
+def plot():
+    pass
+    
+@plot.command(help='Plot station map')
+@click.option('--bluemarble',help='Plot fancy map background', is_flag=True)
+@click.option('--proj',help='Selects matplotlib projection',default='merc',type=str)
+def station_map(proj,bluemarble):
+
+    from tools.plot import plot_stations
+    plot_stations(projection=proj,bluemarble=bluemarble)
+
+
+
+@plot.command(help='Plot stacking of correlation windows')
+@click.argument('input_file')
+@click.option('--bandpass',help='Bandpass filter: Specify as fmin,fmax,order',default=None,type=str)
+@click.option('--pause',help='For animated plots: set pause between frames (in seconds)',default=0.,type=float)
+def windows_stack(input_file,bandpass,pause):
+
+    if bandpass is not None:
+       try:
+           bandpass = [float(nr) for nr in bandpass.split(',')]
+       except:
+           print('Bandpass format must be: freqmin,freqmax,order')
+           bandpass = None
+    from tools.plot import plot_converging_stack
+    plot_converging_stack(input_file,bandpass,float(pause))
+
+
+
+@plot.command(help='Plot single correlation trace')
+@click.argument('input_file')
+@click.option('--bandpass',help='Bandpass filter: Specify as fmin,fmax,order',default=None,type=str)
+
+def correlation(input_file,bandpass):
+    if bandpass is not None:
+       try:
+           bandpass = [float(nr) for nr in bandpass.split(',')]
+       except:
+           print('Bandpass format must be: freqmin,freqmax,order')
+           bandpass = None
+    from tools.plot import plot_correlation
+    plot_correlation(input_file,bandpass)
+
+
+
+
+@plot.command(help='Plot section of correlation traces')
+@click.argument('directory')
+@click.option('--bandpass',help='Bandpass filter: Specify as fmin,fmax,order',default=None,type=str)
+
+def section(directory,bandpass):
+    if bandpass is not None:
+       try:
+           bandpass = [float(nr) for nr in bandpass.split(',')]
+       except:
+           print('Bandpass format must be: freqmin,freqmax,order')
+           bandpass = None
+    from tools.plot import plot_section
+    plot_section(d,bandpass)
+
+
+
+
+
     

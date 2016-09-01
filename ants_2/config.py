@@ -186,9 +186,12 @@ DEFAULT_Correlation = {
     "bandpass": False,
     "bp_params": [],
     "whiten": False,
+    "white_freqmin": 0.0,
+    "white_freqmax": 0.0,
+    "white_taper":0.05,
     "onebit": False,
     "ram_norm": False,
-    "update": False,
+    "update": False
 }
 
 CONFIG_Correlation = os.path.join('input','config_correlation.json')
@@ -220,6 +223,9 @@ class ConfigCorrelation(object):
         self.locations = None
         self.update = None
         self.whiten = None
+        self.white_freqmin = None
+        self.white_freqmax = None
+        self.white_taper = None
         self.ram_norm = None
         self.onebit = None
 

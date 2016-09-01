@@ -2,13 +2,17 @@
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
-from numpy import arange
+from scipy.signal import sosfilt
+from glob import glob
+
 import os
 import h5py
-from obspy import read_inventory
+import time
 import numpy as np
+
+from obspy import read_inventory, read, Stream
 from ants_2.tools.preprocess import bandpass as get_bandpass
-from scipy.signal import sosfilt
+
 
 
 class stainfo(object):
@@ -102,10 +106,10 @@ for locations \'\',00,10.' %i
 		textcol = 'k'
 
 	#draw the meridians and parallels
-	parallels = arange(round(ymin),round(ymax),10)
+	parallels = np.arange(round(ymin),round(ymax),10)
 	#labels = [left,right,top,bottom]
 	m.drawparallels(parallels,labels=[False,True,True,False])
-	meridians = arange(round(xmin),round(xmax),20)
+	meridians = np.arange(round(xmin),round(xmax),20)
 	m.drawmeridians(meridians,labels=[True,False,False,True])
 
 	# plot stations on map
@@ -118,7 +122,7 @@ for locations \'\',00,10.' %i
 	plt.show()
 
 
-def plot_converging_stack(inputfile,bandpass=None):
+def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 
 	f = h5py.File(inputfile,'r')
 	plt.ion()
@@ -140,6 +144,8 @@ def plot_converging_stack(inputfile,bandpass=None):
 	ax1 = fig.add_subplot(212)
 
 	ax1.set_title('{}--{}'.format(cha1,cha2))
+	ax1.set_xlabel('Lag (s)')
+	ax1.set_ylabel('Correlation stack')
 	line1, = ax1.plot(lag,stack,'k')
 	
 
@@ -179,8 +185,63 @@ def plot_converging_stack(inputfile,bandpass=None):
 
 		fig.canvas.draw()
 		cnt += 1
+		if pause > 0:
+			time.sleep(pause)
 
 
+def plot_correlation(f, bandpass=None):
+
+	tr = read(f)[0]
+
+	if bandpass is not None:
+		tr.filter('bandpass',freqmin=bandpass[0],
+			freqmax=bandpass[1],corners=bandpass[2])
+
+	n_stack = tr.stats.sac['user0']
+
+	maxlag = (tr.stats.npts-1) / 2 * tr.stats.delta
+	lag = np.linspace(-maxlag,maxlag,tr.stats.npts)
+
+	plt.plot(lag,tr.data / n_stack)
+
+	id2 = '{}.{}.{}.{}'.format(tr.stats.sac.kuser0.strip(),
+		tr.stats.sac.kevnm.strip(),
+		tr.stats.sac.kuser1.strip(),
+		tr.stats.sac.kuser2.strip())
+
+	trid = tr.id + '--' + id2
+	plt.title(trid)
+	plt.grid()
+	plt.show()
+
+
+
+def plot_section(pathname,bandpass=None,fmt='SAC'):
+
+	
+	inpt = glob(os.path.join(pathname,'*.{}'.format(fmt.lower())))
+	inpt.extend(glob(os.path.join(pathname,'*.{}'.format(fmt.upper()))))
+
+	traces = Stream()
+	for path in inpt:
+		try:
+			traces += read(path)[0]
+		except:
+			continue
+
+
+	for t in traces:
+
+		t.stats.distance = t.stats.sac.dist
+
+	if bandpass is not None:
+		traces.filter('bandpass',freqmin=bandpass[0],
+			freqmax=bandpass[1],corners=bandpass[2])
+
+	maxlag = (traces[0].stats.npts-1) / 2 * traces[0].stats.delta
+	
+	traces.plot(type='section',orientation='horizontal',
+		reftime = traces[0].stats.starttime + 0.5 * maxlag)
 
 
 

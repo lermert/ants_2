@@ -74,7 +74,8 @@ def whiten(tr,freq1,freq2,taper_width):
     
     # Build a cosine taper for the frequency domain
     df = 1/(tr.stats.npts*tr.stats.delta)
-    white_tape = whiten_taper(freq1,freq2,tr.stats.npts,taper_width)
+    white_tape = whiten_taper(freq1,freq2,df,
+        tr.stats.npts,taper_width)
     
     # Transform data to frequency domain
     tr.taper(max_percentage=0.05, type='cosine')
@@ -85,7 +86,7 @@ def whiten(tr,freq1,freq2,taper_width):
     
     # whiten
     spec /= np.abs(spec+tol)
-    spec *= taper
+    spec *= white_tape
     
     # Go back to time domain
     tr.data = np.real(fftpack.ifft(spec,n=len(tr.data)))
