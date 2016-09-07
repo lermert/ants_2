@@ -67,16 +67,16 @@ class PrepStream(object):
 			return()
 
 
-		if cfg.wins:
-			if cfg.verbose:
-				print('* Slicing stream', file = self.ofid)
+		#if cfg.wins:
+	#		if cfg.verbose:
+	#			print('* Slicing stream', file = self.ofid)
 			
-			self.stream = pp.slice_traces(self.stream,
-				cfg.wins_len_sec,cfg.quality_minlengthsec,
-				cfg.verbose,self.ofid)
+	#		self.stream = pp.slice_traces(self.stream,
+	#			cfg.wins_len_sec,cfg.quality_minlengthsec,
+	#			cfg.verbose,self.ofid)
 		
-		if len(self.stream) == 0:
-			return()
+	#	if len(self.stream) == 0:
+#			return()
 
 		if cfg.testrun:
 			# Retain only three, randomly selected parts of the stream
@@ -97,8 +97,8 @@ class PrepStream(object):
 			teststream = Stream(self.stream[0].copy())
 			testtitle = ['Raw data']
 		
+		
 		Fs = self.stream[0].stats.sampling_rate
-
 		if Fs > cfg.Fs_new[-1]:
 			self.add_antialias(Fs,cfg.Fs_new[-1]*
 				cfg.Fs_antialias_factor)
@@ -143,9 +143,27 @@ class PrepStream(object):
 				if cfg.verbose:
 					print('* Slicing stream', file = self.ofid)
 				self.stream = pp.slice_traces(self.stream,
-					cfg.wins_len_sec,cfg.quality_minlensec,
+					cfg.wins_len_sec,cfg.quality_minlengthsec,
 					cfg.verbose,self.ofid)
-		
+
+
+		if Fs > cfg.Fs_new[-1]:
+			if cfg.verbose:
+				print('* Downsample', file = self.ofid)
+			self.downsampling(cfg,True)
+
+		if cfg.testrun:
+			teststream += self.stream[0].copy()
+			testtitle.append('After antialias, downsampling')
+			
+		if cfg.wins:
+			if cfg.verbose:
+				print('* Slicing stream', file = self.ofid)
+			self.stream = pp.slice_traces(self.stream,
+				cfg.wins_len_sec,cfg.quality_minlengthsec,
+				cfg.verbose,self.ofid)
+
+
 		if cfg.wins_taper is not None:
 			if cfg.verbose:
 				print('* Taper', file = self.ofid)
@@ -158,14 +176,7 @@ class PrepStream(object):
 			teststream += self.stream[0].copy()
 			testtitle.append('After detrend, event exclusion')
 
-		if Fs > cfg.Fs_new[-1]:
-			if cfg.verbose:
-				print('* Downsample', file = self.ofid)
-			self.downsampling(cfg,True)
-
-		if cfg.testrun:
-			teststream += self.stream[0].copy()
-			testtitle.append('After antialias, downsampling')
+		
 
 		if cfg.instr_correction:
 			if cfg.verbose:
@@ -353,9 +364,18 @@ class PrepStream(object):
 
 	def downsampling(self,cfg,zerophase_antialias):
 
+		# Find a frequency dependent taper width
+		Fs0 = self.stream[0].stats.sampling_rate
+		npts =  self.stream[0].stats.npts
+		taper_perc = 100. *  Fs0 / cfg.Fs_new[-1] / npts
+		print(npts)
+		print(taper_perc)
 
 		# Apply antialias filter
 		for trace in self.stream:
+
+			trace.taper(type='cosine',max_percentage=taper_perc)
+
 			if zerophase_antialias:
 				firstpass = sosfilt(self.anti_alias,trace.data)
 				trace.data = sosfilt(self.anti_alias,firstpass[::-1])[::-1]
@@ -366,10 +386,10 @@ class PrepStream(object):
 		for Fs in cfg.Fs_new:
 			Fs_old = self.stream[0].stats.sampling_rate
 
-
-			if Fs_old % Fs == 0:
-				dec = int( Fs_old / Fs)
-				self.stream.decimate(dec, no_filter=True, 
+			dec = ( Fs_old / Fs)
+			if dec % 1.0 == 0:
+				
+				self.stream.decimate(int(dec), no_filter=True, 
 					strict_length=False)
 				if cfg.verbose:
 					print('* decimated traces to %g Hz' %Fs,

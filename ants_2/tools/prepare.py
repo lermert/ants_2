@@ -137,8 +137,8 @@ def slice_traces(data, len_sec, min_len_sec, verbose, ofid):
         #- march through the trace until the endtime is reached
         while starttime < data[k].stats.endtime-min_len_sec:
             
-            s_new += data[k].slice(starttime,starttime+len_sec-1./
-            (data[k].stats.sampling_rate))
+            s_new += data[k].slice(starttime,starttime + len_sec-
+            data[k].stats.delta)
             
             starttime += len_sec
             

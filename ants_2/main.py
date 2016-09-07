@@ -38,6 +38,7 @@ def new_project():
     os.mkdir(os.path.join('.','data'))
     os.mkdir(os.path.join('.','data','raw'))
     os.mkdir(os.path.join('.','data','processed'))
+    os.mkdir(os.path.join('.','data','treated'))
     os.mkdir(os.path.join('.','data','correlations'))
     os.mkdir(os.path.join('.','meta'))
     os.mkdir(os.path.join('.','meta','resp'))

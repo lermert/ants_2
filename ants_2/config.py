@@ -83,8 +83,6 @@ DEFAULT_Preprocess = {
     "wins_demean":True,
     "wins_taper":0.05,
     "wins_taper_type":'cosine',
-    "wins_cap":False,
-    "wins_cap_threshold":15,
     "Fs_old":[],
     "Fs_new":[],
     "Fs_antialias_factor":0.4,
@@ -124,8 +122,6 @@ class ConfigPreprocess(object):
         self.wins_demean = None
         self.wins_taper = None
         self.wins_taper_type = None
-        self.wins_cap = None
-        self.wins_cap_threshold = None
         
         self.Fs_old = None
         self.Fs_new = None
@@ -183,12 +179,11 @@ DEFAULT_Correlation = {
     "locations":[],
     "cap_glitch": False,
     "cap_thresh": 10.0,
-    "bandpass": False,
-    "bp_params": [],
+    "bandpass": None,
     "whiten": False,
     "white_freqmin": 0.0,
     "white_freqmax": 0.0,
-    "white_taper":0.05,
+    "white_taper_samples":100,
     "onebit": False,
     "ram_norm": False,
     "update": False
@@ -203,7 +198,6 @@ class ConfigCorrelation(object):
         
         self.indirs = None
         self.bandpass = None
-        self.bp_params = None
         self.cap_glitch = None
         self.cap_thresh = None
         self.time_begin = None
@@ -225,7 +219,7 @@ class ConfigCorrelation(object):
         self.whiten = None
         self.white_freqmin = None
         self.white_freqmax = None
-        self.white_taper = None
+        self.white_taper_samples = None
         self.ram_norm = None
         self.onebit = None
 

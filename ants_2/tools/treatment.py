@@ -1,8 +1,9 @@
 import numpy as np
 from obspy.signal.filter import envelope
+from obspy.signal.util import next_pow_2
 from scipy import fftpack
 from scipy.signal import iirfilter, zpk2sos
-
+from ants_2.tools.windows import my_centered
 
 def bandpass(freqmin, freqmax, df, corners=4):
     """
@@ -44,53 +45,81 @@ def bandpass(freqmin, freqmax, df, corners=4):
     return sos
 
 
-def whiten_taper(freq1,freq2,df,npts,taper_width):
-    
-    #freqaxis=np.fft.fftfreq(tr.stats.npts,tr.stats.delta)
-    
-    ind_fw1 = int(round(freq1/df))
-    ind_fw2 = int(round(freq2/df))
+def whiten_taper(ind_fw1,ind_fw2,npts,taper_samples):
     
     
-    length_taper = int(round((freq2-freq1)*\
-    taper_width/df))
+    if ind_fw1 - taper_samples >= 0:
+        i_l = ind_fw1 - taper_samples
+    else:
+        i_l = 0
+        print('** Could not fully taper during whitening. Consider using a \
+            smaller frequency range for whitening.')
+
+    if ind_fw2 + taper_samples < npts:
+        i_h = ind_fw2 + taper_samples
+    else:
+        i_h = npts - 1
+        print('** Could not fully taper during whitening. Consider using a \
+            smaller frequency range for whitening.')
     
-    taper_left = np.linspace(0.,np.pi/2,length_taper)
+    
+    taper_left = np.linspace(0.,np.pi/2,ind_fw1-i_l)
     taper_left = np.square(np.sin(taper_left))
     
-    taper_right = np.linspace(np.pi/2,np.pi,length_taper)
+    taper_right = np.linspace(np.pi/2,np.pi,i_h-ind_fw2)
     taper_right = np.square(np.sin(taper_right))
     
     taper = np.zeros(npts)
     taper[ind_fw1:ind_fw2] += 1.
-    taper[ind_fw1:ind_fw1+length_taper] = taper_left
-    taper[ind_fw2-length_taper:ind_fw2] = taper_right
+    taper[i_l:ind_fw1] = taper_left
+    taper[ind_fw2:i_h] = taper_right
 
     return taper
 
 
-def whiten(tr,freq1,freq2,taper_width):
-    # ToDo check fft here - zeropadding would make this much faster.
+def whiten(tr,freq1,freq2,taper_samples):
+    
+    # zeropadding should make things faster
+    n_pad = next_pow_2(tr.stats.npts)
+
+    data = my_centered(tr.data,n_pad)
+
+    freqaxis=np.fft.rfftfreq(tr.stats.npts,tr.stats.delta)
+
+    ind_fw = np.where( ( freqaxis > freq1 ) & ( freqaxis < freq2 ) )[0]
+
+    if len(ind_fw) == 0:
+        return(np.zeros(tr.stats.npts))
+
+    ind_fw1 = ind_fw[0]
+    
+    ind_fw2 = ind_fw[-1]
     
     # Build a cosine taper for the frequency domain
-    df = 1/(tr.stats.npts*tr.stats.delta)
-    white_tape = whiten_taper(freq1,freq2,df,
-        tr.stats.npts,taper_width)
+    #df = 1/(tr.stats.npts*tr.stats.delta)
+    
+    # Taper 
+    white_tape = whiten_taper(ind_fw1,ind_fw2,len(freqaxis),taper_samples)
     
     # Transform data to frequency domain
     tr.taper(max_percentage=0.05, type='cosine')
-    spec = fftpack.fft(tr.data)
+    spec = np.fft.rfft(tr.data)
     
     # Don't divide by 0
-    tol = np.max(np.abs(spec)) / 1e5
+    #tol = np.max(np.abs(spec)) / 1e5
+    #spec /= np.abs(spec+tol)
     
-    # whiten
-    spec /= np.abs(spec+tol)
-    spec *= white_tape
+    # whiten. This elegant solution is from MSNoise:
+    spec =  white_tape * np.exp(1j * np.angle(spec))
     
     # Go back to time domain
-    tr.data = np.real(fftpack.ifft(spec,n=len(tr.data)))
-    #return tr
+    # Difficulty here: The time fdomain signal might no longer be real.
+    # Hence, irfft cannot be used.
+    spec_neg = np.conjugate(spec)[::-1]
+    spec = np.concatenate((spec,spec_neg[:-1]))
+
+    tr.data = np.real(np.fft.ifft(spec))
+    
     
 def cap(tr,cap_thresh):
     

@@ -1,6 +1,7 @@
 # Correlation block object:
 from __future__ import print_function
 from obspy import Stream, UTCDateTime, read
+from scipy.signal import sosfilt
 import numpy as np
 import os
 import re
@@ -9,13 +10,12 @@ import re
 from ants_2.tools.bookkeep import name_correlation_file
 from ants_2.tools.util import get_geoinf
 from ants_2.classes.corrtrace import CorrTrace
-from ants_2.tools.preprocess import ram_norm, whiten, cap
 from ants_2.tools.correlations import cross_covar
+from ants_2.tools.treatment import ram_norm, whiten, cap, bandpass
 # list of possible channels combinations indicating that the data needs to be rotated.
 horizontals = ['RR','RT','TR','TT','TZ','ZT','RZ','ZR']
 import matplotlib.pyplot as plt
 
-#from pympler import muppy, summary
 
 class CorrBlock(object):
 
@@ -46,12 +46,10 @@ class CorrBlock(object):
 				cp_name = '{}--{}'.format(*pair)
 				preprstring = self.get_prepstring()
 
-				#try:
+				
 				self._correlations[cp_name] = CorrTrace(pair[0],pair[1],
 				self.sampling_rate,stck_int=cfg.interm_stack)
-				#except:
-				# 	print('** Could not initialize correlation for %s,%s: check metadata'
-				# 		%(pair[0],pair[1]))
+				
 
 
 		
@@ -86,7 +84,19 @@ class CorrBlock(object):
 		min_len_samples = int(round(self.cfg.time_min_window*self.sampling_rate))
 		max_lag_samples = int(round(self.cfg.corr_maxlag * self.sampling_rate))
 		
-		#all_objects = muppy.get_objects()
+		
+		if self.cfg.bandpass is not None:
+			fmin = bandpass[0]
+			fmax = bandpass[1]
+			if fmax <= fmin:
+				msg = "Bandpass upper corner frequency must be above lower corner frequency."
+				raise ValueError(msg)
+
+			order = bandpass[2]
+			sos = bandpass(freqmin=fmin,freqmax=fmax,
+				df=self.sampling_rate,corners=order)
+
+
 		# Time loop
 		t = t_0
 		
@@ -98,27 +108,41 @@ class CorrBlock(object):
 			
 			# - check endtime, if necessary, add data from 'later' file
 			self.update_data(t, win_len_seconds)
+			
 			#if upd:
 		#		print(summary.summarize(all_objects))
 
 			# - slice the traces
-			windows = self.data.slice(t, t + win_len_seconds - self.delta)
+			# - deepcopy is used so that processing is not applied directly on the data stream
+			if self.cfg.time_overlap == 0:
+				windows = self.data.slice(t, t + win_len_seconds - self.delta)
+			else:
+				windows = self.data.slice(t, t + win_len_seconds - self.delta).copy()
+			
 			
 
-			# self.preprocess?
+			
 			# - Apply preprocessing
 			for w in windows:
-				# - check minimum length requirement
-				# - ToDo: Add bandpass, glitch cap
+				
+			
+				if self.cfg.bandpass is not None:
+					w_temp = sosfilt(sos,w.data)
+					w.data = sosfilt(sos,w_temp[::-1])[::-1]
+
+				if self.cfg.cap_glitch:
+					cap(w,self.cfg.cap_thresh)
 
 				if self.cfg.whiten:
-					w = whiten(w,self.cfg.white_freqmin,self.cfg.white_freqmax,self.cfg.white_taper)
+					whiten(w,self.cfg.white_freqmin,
+						self.cfg.white_freqmax,
+						self.cfg.white_taper_samples)
 
 				if self.cfg.onebit:
 					w.data = np.sign(w.data)
 
 				if self.cfg.ram_norm:
-					w = ram_norm(w,self.cfg.ram_window,self.cfg.ram_prefilt)
+					ram_norm(w,self.cfg.ram_window,self.cfg.ram_prefilt)
 				
 
 			# - station pair loop
@@ -202,8 +226,9 @@ class CorrBlock(object):
 
 	def rotate(self,str1,str2,baz1,baz2):
 
-		s_temp1 = str1.copy()
-		s_temp2 = str2.copy()
+		# deepcopy was taken during slicing already
+		s_temp1 = str1#.copy()
+		s_temp2 = str2#.copy()
 
 		try:
 			s_temp1.rotate('NE->RT',back_azimuth=baz1)
@@ -232,7 +257,7 @@ class CorrBlock(object):
 		for trace in self.data:
 			
 			# is the trace long enough?
-			if trace.stats.endtime < t + win_len:
+			if trace.stats.endtime < (t + win_len):
 				
 				if self.inv[trace.id] == []:
 					try:
@@ -242,13 +267,14 @@ class CorrBlock(object):
 						continue
 
 
-				
-				f = self.inv[trace.id].pop(0)
 				# which trace to read next?
+				f = self.inv[trace.id].pop(0)
+				
 				try:
 					
 					# read new trace
 					newtrace = read(f)
+
 					# add new trace to stream
 					self.data += newtrace
 					self.data._cleanup()
