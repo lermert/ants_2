@@ -11,7 +11,7 @@ import time
 import numpy as np
 
 from obspy import read_inventory, read, Stream
-from ants_2.tools.preprocess import bandpass as get_bandpass
+from ants_2.tools.treatment import bandpass as get_bandpass
 
 
 
