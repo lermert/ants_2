@@ -43,6 +43,8 @@ class CorrBlock(object):
 		for cp in block.channel_pairs:
 			for pair in cp:
 
+				pair = [re.sub('E$','T',str) for str in pair]
+				pair = [re.sub('N$','R',str) for str in pair]
 				cp_name = '{}--{}'.format(*pair)
 				preprstring = self.get_prepstring()
 
@@ -104,7 +106,8 @@ class CorrBlock(object):
 			
 
 			print(t,file=output_file)
-
+			print(t)
+			
 			
 			# - check endtime, if necessary, add data from 'later' file
 			self.update_data(t, win_len_seconds)
@@ -113,10 +116,12 @@ class CorrBlock(object):
 		#		print(summary.summarize(all_objects))
 
 			# - slice the traces
-			# - deepcopy is used so that processing is not applied directly on the data stream
+			
 			if self.cfg.time_overlap == 0:
 				windows = self.data.slice(t, t + win_len_seconds - self.delta)
 			else:
+				# - deepcopy is used so that processing is not applied directly on the data stream
+				# - This is much more expensive than using non-overlapping windows, due to the copying
 				windows = self.data.slice(t, t + win_len_seconds - self.delta).copy()
 			
 			
@@ -162,16 +167,22 @@ class CorrBlock(object):
 				if any([i in self.cfg.corr_tensorcomponents for i in horizontals]):
 
 					str1, str2 = self.rotate(str1,str2,self.baz1[sp_i],self.baz2[sp_i])
-
+					
 				# - channel loop
 				
 				for cpair in self.channel_pairs[sp_i]:
-					
+
+					cpair = [re.sub('E$','T',str) for str in cpair]
+					cpair = [re.sub('N$','R',str) for str in cpair]
+				
 					cp_name = '{}--{}'.format(*cpair)
 					print(cp_name,file=output_file)
+					print(cp_name)
 
 					loc1, cha1 = cpair[0].split('.')[2:4]
 					loc2, cha2 = cpair[1].split('.')[2:4]
+
+
 					try:
 						tr1 = str1.select(location=loc1,channel=cha1)[0]
 						tr2 = str2.select(location=loc2,channel=cha2)[0]
@@ -226,12 +237,18 @@ class CorrBlock(object):
 
 	def rotate(self,str1,str2,baz1,baz2):
 
-		# deepcopy was taken during slicing already
-		s_temp1 = str1#.copy()
-		s_temp2 = str2#.copy()
+		
+		if self.cfg.time_overlap == 0:
+			s_temp1 = str1.copy()
+			s_temp2 = str2.copy()
+		else:
+			# deepcopy was taken during slicing already
+			s_temp1 = str1
+			s_temp2 = str2
 
 		try:
 			s_temp1.rotate('NE->RT',back_azimuth=baz1)
+		
 			
 		except:
 			print('** data not rotated for stream: ')

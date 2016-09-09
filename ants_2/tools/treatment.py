@@ -133,20 +133,26 @@ def cap(tr,cap_thresh):
 def ram_norm(tr,winlen,prefilt=None):
     
     trace_orig = tr.copy()
-    hlen = int(winlen*trace.stats.sampling_rate/2.)
-    weighttrace = np.zeros(trace.stats.npts)
+    hlen = int(winlen*tr.stats.sampling_rate/2.)
+
+    if 2*hlen >= tr.stats.npts:
+        tr.data = np.zeros(tr.stats.npts)
+        return()
+
+
+    weighttrace = np.zeros(tr.stats.npts)
     
     if prefilt is not None:
-        trace.filter('bandpass',freqmin=prefilt[0],freqmax=prefilt[1],\
+        tr.filter('bandpass',freqmin=prefilt[0],freqmax=prefilt[1],\
         corners=prefilt[2],zerophase=True)
         
-    envlp = envelope(trace.data)
+    envlp = envelope(tr.data)
 
-    for n in xrange(hlen,trace.stats.npts-hlen):
+    for n in xrange(hlen,tr.stats.npts-hlen):
         weighttrace[n] = np.sum(envlp[n-hlen:n+hlen+1]/(2.*hlen+1))
         
     weighttrace[0:hlen] = weighttrace[hlen]
     weighttrace[-hlen:] = weighttrace[-hlen-1]
     
-    trace.data = trace_orig.data / weighttrace
-    #return(trace_orig)
+    tr.data = trace_orig.data / weighttrace
+   

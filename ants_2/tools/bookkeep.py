@@ -229,7 +229,7 @@ class correlation_inventory(object):
         # - Determine station pairs
         # - station pairs are grouped into blocks
         self.station_blocks = station_pairs(all_stations,
-            cfg.n_sta_perproc, cfg.corr_autocorr)
+            cfg.n_stationpairs, cfg.corr_autocorr)
 
 
         self.blocks = []

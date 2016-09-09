@@ -264,10 +264,11 @@ def plot_section(pathname,bandpass=None,fmt='SAC'):
 		traces.filter('bandpass',freqmin=bandpass[0],
 			freqmax=bandpass[1],corners=bandpass[2])
 
-	maxlag = (traces[0].stats.npts-1) / 2 * traces[0].stats.delta
+	# maxlag seems to be requested in samples..this must be a bug in obspy.
+	maxlag = (traces[0].stats.npts-1) / 2.0 
 	
 	traces.plot(type='section',orientation='horizontal',
-		reftime = traces[0].stats.starttime + 0.5 * maxlag)
+		reftime = traces[0].stats.starttime + maxlag)
 
 
 

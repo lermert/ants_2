@@ -17,10 +17,10 @@ def run():
     
 
 
-@run.command(help='Print directory where ants code is located.')
-def show_root():
-    from . import _ROOT
-    print(_ROOT)
+# @run.command(help='Print directory where ants code is located.')
+# def show_root():
+#     from . import _ROOT
+#     print(_ROOT)
 
 
 #==============================================================================

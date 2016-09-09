@@ -71,6 +71,7 @@ def measurement(mtype,filt,**options):
             
             # Get all the necessary information
             info = get_station_info(tr_o.stats)
+
            
             # Take the measurement
            

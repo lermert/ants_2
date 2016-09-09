@@ -186,6 +186,8 @@ DEFAULT_Correlation = {
     "white_taper_samples":100,
     "onebit": False,
     "ram_norm": False,
+    "ram_window": 0.,
+    "ram_prefilt": [],
     "update": False
 }
 
@@ -221,6 +223,8 @@ class ConfigCorrelation(object):
         self.white_freqmax = None
         self.white_taper_samples = None
         self.ram_norm = None
+        self.ram_window = None
+        self.ram_prefilt = None
         self.onebit = None
 
         self.initialize()

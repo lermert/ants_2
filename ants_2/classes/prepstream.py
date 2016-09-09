@@ -127,10 +127,12 @@ class PrepStream(object):
 
 		# ToDo: Prettier event excluder
 		if cfg.event_exclude:
+
+			# Re-merging not necessary anymore, as slicing was moved to after decimation (to avoid gaps and overlaps)
 			# Re-merge for event exclusion
-			if cfg.verbose:
-				print('* Re-Merging for event exclusion',
-					file = self.ofid)
+			#if cfg.verbose:
+		#		print('* Re-Merging for event exclusion',
+	#				file = self.ofid)
 			self.stream._cleanup()
 			if cfg.verbose:
 				print('* Excluding high energy windows', 
@@ -139,12 +141,12 @@ class PrepStream(object):
 			self.event_exclude(cfg)
 			self.event_exclude(cfg)
 
-			if cfg.wins:
-				if cfg.verbose:
-					print('* Slicing stream', file = self.ofid)
-				self.stream = pp.slice_traces(self.stream,
-					cfg.wins_len_sec,cfg.quality_minlengthsec,
-					cfg.verbose,self.ofid)
+			# if cfg.wins:
+			# 	if cfg.verbose:
+			# 		print('* Slicing stream', file = self.ofid)
+			# 	self.stream = pp.slice_traces(self.stream,
+			# 		cfg.wins_len_sec,cfg.quality_minlengthsec,
+			# 		cfg.verbose,self.ofid)
 
 
 		if Fs > cfg.Fs_new[-1]:
