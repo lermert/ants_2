@@ -66,6 +66,7 @@ def measurement(mtype,filt,**options):
            
             # Filter
             if filt is not None:
+
                 tr_o.filter('bandpass',freqmin=filt[0],freqmax=filt[1],
                     corners=filt[2],zerophase=True)
             
@@ -91,4 +92,16 @@ def measurement(mtype,filt,**options):
     
     filename = '{}.measurement.csv'.format(mtype)
     measurements.to_csv(os.path.join('data',filename),index=None)
+
+    fh = open(os.path.join('data','measurement_options.txt'),'w')
+
+    if filt is not None:
+        fh.write("Butterworth filter freqmin,freqmax,order: ")
+        fh.write("{},{},{}\n".format(*filt))
+    for key,value in options.items():
+        fh.write("{}: {}\n".format(key,value))
+
+    fh.close()
+
+
 

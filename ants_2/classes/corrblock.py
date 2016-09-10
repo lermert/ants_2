@@ -88,13 +88,13 @@ class CorrBlock(object):
 		
 		
 		if self.cfg.bandpass is not None:
-			fmin = bandpass[0]
-			fmax = bandpass[1]
+			fmin = self.cfg.bandpass[0]
+			fmax = self.cfg.bandpass[1]
 			if fmax <= fmin:
 				msg = "Bandpass upper corner frequency must be above lower corner frequency."
 				raise ValueError(msg)
 
-			order = bandpass[2]
+			order = self.cfg.bandpass[2]
 			sos = bandpass(freqmin=fmin,freqmax=fmax,
 				df=self.sampling_rate,corners=order)
 

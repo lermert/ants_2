@@ -180,6 +180,7 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 
 	ax2 = fig.add_subplot(211)
 	ax2.set_ylim([np.min(stack)*3,np.max(stack)*3])
+	ax2.set_ylabel('Correlation window(s)')
 	line2, = ax2.plot(lag,stack)
 	text1 = ax2.set_title(str(cnt))
 
@@ -276,7 +277,7 @@ def plot_section(pathname,bandpass=None,fmt='SAC'):
 def plot_window(correlation, window, measurement,win_noise=None):
     
     
-    maxlag = correlation.stats.npts * correlation.stats.delta
+    maxlag = (correlation.stats.npts - 1) / 2. * correlation.stats.delta
     lag = np.linspace(-maxlag,maxlag,correlation.stats.npts)
     
     plt.plot(lag,correlation.data/np.max(np.abs(correlation.data)))
@@ -323,7 +324,7 @@ def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
 		shading=shade, vmin=vmin,vmax=vmax, cmap=cmap)
 
 
-	m.colorbar(location='bottom')
+	m.colorbar(location='bottom',pad=0.4)
 	m.drawcoastlines(linewidth=0.5)
 	m.drawparallels(np.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
 	m.drawmeridians(np.arange(-180,210,60.),labels=[0,0,0,1]) # draw meridians

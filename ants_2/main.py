@@ -6,7 +6,7 @@ import scripts
 from ants_2.config import ConfigDownload, ConfigPreprocess, ConfigCorrelation
 import warnings
 
-warnings.simplefilter("ignore")
+#warnings.simplefilter("ignore")
 
 @click.group()
 def run():
@@ -65,7 +65,7 @@ def new_project():
 # Data download
 #==============================================================================
 
-@run.command(help='Download data, input file\
+@run.command(help='Download data\ninput file\
 input/config_download.json')
 def download():
     from scripts.ant_download import ant_download
@@ -75,7 +75,7 @@ def download():
 # Preprocessing
 #==============================================================================
 
-@run.command(help='Remove instrument response, input file input/config_preprocess.json')
+@run.command(help='Remove instrument response\ninput file input/config_preprocess.json')
 def preprocess():
     from scripts.ant_preprocess import preprocess
     preprocess()
@@ -84,7 +84,7 @@ def preprocess():
 # Correlation
 #==============================================================================
 
-@run.command(help='Correlation, input file input/config_correlation.json')
+@run.command(help='Correlation\ninput file input/config_correlation.json')
 def correlation():
     from scripts.ant_correlation import correlate
     correlate()
@@ -102,7 +102,7 @@ def measure():
 
 
 @measure.command()
-@click.option('--bandpass',help='Filter before measurement',default=None)
+@click.option('--bandpass',help='freqmin,freqmax,order: Butterworth bandpass filter',default=None)
 @click.option('--speed',help='approx. wave speed in m/s',default=None)
 @click.option('--hw',help='window half width in seconds',default=None)
 @click.option('--window',help='window type',default='hann')
@@ -122,10 +122,12 @@ def ln_energy_ratio(bandpass,speed,hw,window,plot,sep_noise,overlap):
     
 
     if isinstance(bandpass,unicode):
-
-        bandpass = [float(f) for f in bandpass.split(',')]
-        print("Filtering between %g and %g Hz." %(bandpass[0],bandpass[1]))
-
+        try:
+            bandpass = [float(f) for f in bandpass.split(',')]
+            print("Filtering between %g and %g Hz." %(bandpass[0],bandpass[1]))
+        except:
+           print('Bandpass format must be: freqmin,freqmax,order')
+           bandpass = None
     
     
     # TODo all available misfits --  what parameters do they need (if any.)
@@ -147,7 +149,8 @@ def ln_energy_ratio(bandpass,speed,hw,window,plot,sep_noise,overlap):
     window_params['plot']               =    bool(plot)
     window_params['causal_side']        =    True
     
-    measurement(mtype='ln_energy_ratio',filt=bandpass,g_speed=speed,window_params=window_params)
+    measurement(mtype='ln_energy_ratio',filt=bandpass,
+        g_speed=speed,window_params=window_params)
 
 #@click.option('--causal',help='In case of using energy_diff measurement, this option selects causal or acausal branch of the correlation',default=True)
 
@@ -165,24 +168,34 @@ def ln_energy_ratio(bandpass,speed,hw,window,plot,sep_noise,overlap):
 @click.option('--bin_size',help='Geographic bin size in degree',default=5.)
 @click.option('--min_snr',help='Minimum signal to noise ratio for meausurements',default=0.0)
 def sourcemap(f,speed,q,ray_step,bin_size,min_snr):
+    
     """
     Plot measured log energy ratios on a map using ray-theoretical kernels.
 
     Example: ants sourcemap --f 0.14 --speed 3000 --q 120
     """
 
-    ray_step = float(ray_step) / 1000.
-    speed = float(speed)
-    f = float(f)
-    q = float(q)
-    bin_size = float(bin_size)
 
     if not os.path.exists('data/ln_energy_ratio.measurement.csv'):
-        msg = 'Source maps can currently only be created from file ln_energy_ratio.csv. Run ants measure ln_energy_ratio to obtain this file.'
+        msg = 'Source maps can currently only be created from file ln_energy_ratio.csv.\nRun ants measure ln_energy_ratio to obtain this file.'
         raise NotImplementedError(msg)
 
+
+    try:
+        
+        speed = float(speed)
+        f = float(f)
+        q = float(q)
+    except:
+        msg = 'For this measurement, options f, speed and q must be specified.'
+        raise ValueError(msg)
+    
+    bin_size = float(bin_size)
+    ray_step = float(ray_step) / 1000.
+    min_snr = float(min_snr)
+
     from ants_2.scripts.ant_sourceimaging import sourcemap
-    s = sourcemap('data/ln_energy_ratio.measurement.csv',speed,f,q,ray_step)
+    s = sourcemap('data/ln_energy_ratio.measurement.csv',speed,f,q,ray_step,min_snr)
     s._temp_kernels()
     s._bin_kernels(bin_size,bin_size)
     s.plot_sourcemap()
@@ -209,7 +222,7 @@ def station_map(proj,bluemarble):
 
 @plot.command(help='Plot stacking of correlation windows')
 @click.argument('input_file')
-@click.option('--bandpass',help='Bandpass filter: Specify as fmin,fmax,order',default=None,type=str)
+@click.option('--bandpass',help='freqmin,freqmax,order: Butterworth bandpass filter',default=None,type=str)
 @click.option('--pause',help='For animated plots: set pause between frames (in seconds)',default=0.,type=float)
 def windows_stack(input_file,bandpass,pause):
 
@@ -226,7 +239,7 @@ def windows_stack(input_file,bandpass,pause):
 
 @plot.command(help='Plot single correlation trace')
 @click.argument('input_file')
-@click.option('--bandpass',help='Bandpass filter: Specify as fmin,fmax,order',default=None,type=str)
+@click.option('--bandpass',help='freqmin,freqmax,order: Butterworth bandpass filter',default=None,type=str)
 
 def correlation(input_file,bandpass):
     if bandpass is not None:
@@ -243,7 +256,7 @@ def correlation(input_file,bandpass):
 
 @plot.command(help='Plot section of correlation traces')
 @click.argument('directory')
-@click.option('--bandpass',help='Bandpass filter: Specify as fmin,fmax,order',default=None,type=str)
+@click.option('--bandpass',help='freqmin,freqmax,order: Butterworth bandpass filter',default=None,type=str)
 
 def section(directory,bandpass):
     if bandpass is not None:

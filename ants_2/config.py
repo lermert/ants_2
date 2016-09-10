@@ -165,7 +165,7 @@ DEFAULT_Correlation = {
     "time_begin": "2000-01-01T00:00:00.0000",
     "time_end": "2001-01-01T00:00:00.0000",
     "time_window_length":3600,
-    "time_overlap":0,
+    "time_overlap":0.0,
     "time_min_window":3600,
     "corr_autocorr": False,
     "corr_type": "ccc",
@@ -246,4 +246,204 @@ class ConfigCorrelation(object):
             
         for key, value in data.iteritems():
             setattr(self, key, value)
+
+        self.check_params()
+
+
+    def check_params(self):
+        components = ['ZZ','RR','TT','ZR','RZ','ZT','TZ','RT','TR']
+
+
+
+      # lists
+
+        if not isinstance(self.locations,list):
+            msg = '\'locations\' in config_correlation.json must be list'
+            raise TypeError(msg)
+
+        if not isinstance(self.corr_tensorcomponents,list):
+            msg = '\'corr_tensorcomponents\' in config_correlation.json must be list'
+            raise TypeError(msg)
+
+        if False in [(c in components) for c in self.corr_tensorcomponents]:
+            msg = 'Tensor component not understood. Possible components are: {}'.format(components)
+            raise ValueError(msg)
+
+
+        if not isinstance(self.indirs,list):
+            if self.indirs is None: pass
+            msg = '\'indirs\' in config_correlation.json must be list'
+            raise TypeError(msg)
+
+        if not True in [os.path.exists(d) for d in self.indirs]:
+            msg = '\'indirs\' specified in config_correlation.json do not exist.'
+            raise TypeError(msg)
+
+
+        if not isinstance(self.bandpass,list):
+            if self.bandpass is None: pass
+            msg = '\'bandpass\' in config_correlation.json must be list'
+            raise TypeError(msg)
+        else:
+            if self.bandpass is None: pass
+            try:
+                bp = [float(n) for n in self.bandpass]
+            except:
+                msg = '\'bandpass\' in config_correlation.json must be [freqmin, freqmax,order]'
+                raise ValueError(msg)
+
+
+        if not isinstance(self.ram_prefilt,list):
+            
+            msg = '\'ram_prefilt\' in config_correlation.json must be list'
+            raise TypeError(msg)
+        else:
+            
+            try:
+                bp = [float(n) for n in self.ram_prefilt]
+            except:
+                msg = '\'ram_prefilt\' in config_correlation.json must be [freqmin, freqmax,order]'
+                raise ValueError(msg)
+
+
+
+
+    # bools
+    # bool
+
+        if not isinstance(self.corr_autocorr,bool):
+            msg = '\'corr_autocorr\' in config_correlation.json must be Boolean'
+            raise TypeError(msg)
+
+        if not isinstance(self.corr_normalize,bool):
+            msg = '\'corr_normalize\' in config_correlation.json must be Boolean'
+            raise TypeError(msg)
+
+        if not isinstance(self.locations_mix,bool):
+            msg = '\'locations_mix\' in config_correlation.json must be Boolean'
+            raise TypeError(msg)
+
+        if not isinstance(self.update,bool):
+            msg = '\'update\' in config_correlation.json must be Boolean'
+            raise TypeError(msg)
+
+        if not isinstance(self.whiten,bool):
+            msg = '\'whiten\' in config_correlation.json must be Boolean'
+            raise TypeError(msg)
+
+        if not isinstance(self.ram_norm,bool):
+            msg = '\'ram_norm\' in config_correlation.json must be Boolean'
+            raise TypeError(msg)
+
+        if not isinstance(self.cap_glitch,bool):
+            msg = '\'cap_glitch\' in config_correlation.json must be Boolean'
+            raise TypeError(msg)
+
+        if not isinstance(self.onebit,bool):
+            msg = '\'onebit\' in config_correlation.json must be Boolean'
+            raise TypeError(msg)
+
+        
+        try:
+            t1 = UTCDateTime(self.time_begin)
+        except:
+            msg = 'Wrong format for \'time_begin\' in config_correlation.json.\nIt must be a string like 2000-01-01T00:00:00.0000.'
+            raise ValueError(msg)
+
+        try:
+            t2 = UTCDateTime(self.time_end)
+        except:
+            msg = 'Wrong format for \'time_end\' in config_correlation.json.\nIt must be a string like 2000-01-01T00:00:00.0000.'
+            raise ValueError(msg)
+
+        if t2 < t1:
+            msg = '\'time_end\' is before \'time_begin\'.'
+            raise ValueError(msg)
+
+
+
+
+    # Floats ======================================================================
+
+
+        if not isinstance(self.cap_thresh,float):
+            if not isinstance(self.cap_thresh,int):
+                
+                msg = '\'cap_thresh\' in config_correlation.json must be a positive number.'
+                raise ValueError(msg)
+
+        if not self.cap_thresh > 0:
+            msg = '\'cap_thresh\' in config_correlation.json must be a positive number.'
+            raise ValueError(msg)
+
+        if not isinstance(self.time_overlap,float):
+            if not isinstance(self.time_overlap,int):
+                
+                msg = '\'time_overlap\' in config_correlation.json must be a number.'
+                raise ValueError(msg)
+        
+        if not isinstance(self.time_window_length,float):
+            if not isinstance(self.time_window_length,int):
+                
+                msg = '\'time_window_length\' in config_correlation.json must be a number.'
+                raise ValueError(msg)
+
+        if not isinstance(self.time_min_window,float):
+            if not isinstance(self.time_min_window,int):
+                
+                msg = '\'time_min_window\' in config_correlation.json must be a number.'
+                raise ValueError(msg)
+
+
+        if not isinstance(self.corr_maxlag,float):
+            if not isinstance(self.corr_maxlag,int):
+                
+                msg = '\'corr_maxlag\' in config_correlation.json must be a number.'
+                raise ValueError(msg)
+
+        if not isinstance(self.white_freqmin,float):
+            if not isinstance(self.white_freqmin,int):
+                
+                msg = '\'white_freqmin\' in config_correlation.json must be a number.'
+                raise ValueError(msg)
+
+        if not isinstance(self.white_freqmax,float):
+            if not isinstance(self.white_freqmax,int):
+                
+                msg = '\'white_freqmax\' in config_correlation.json must be a number.'
+                raise ValueError(msg)
+
+        if not isinstance(self.ram_window,float):
+            if not isinstance(self.ram_window,int):
+                
+                msg = '\'ram_window\' in config_correlation.json must be a number.'
+                raise ValueError(msg)
+            
+
+            
+        
+            
+            
+          
+            
+            # string
+            
+        if not isinstance(self.input_format,str):
+            
+            msg = '\'input_format\' in config_correlation.json must be a string.'
+            raise ValueError(msg)
+
+            # integer
+        if not isinstance(self.n_stationpairs,int):
+            msg = '\'n_stationpairs\' in config_correlation.json must be integer.'
+            raise ValueError(msg)
+
+        if not isinstance(self.interm_stack,int):
+            msg = '\'interm_stack\' in config_correlation.json must be integer.'
+            raise ValueError(msg)
+
+        if not isinstance(self.white_taper_samples,int):
+            msg = '\'white_taper_samples\' in config_correlation.json must be integer.'
+            raise ValueError(msg)
+
 
