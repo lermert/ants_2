@@ -431,7 +431,7 @@ class ConfigCorrelation(object):
         try:
             inp = str(self.input_format)
         except:
-            print(type(self.input_format))
+            
             msg = '\'input_format\' in config_correlation.json must be a string.'
             raise ValueError(msg)
 
