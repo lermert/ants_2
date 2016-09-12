@@ -2,7 +2,7 @@ import io
 import json
 import os
 import click
-
+from obspy import UTCDateTime
 
 DEFAULT_Download = {
     "verbose":True,
