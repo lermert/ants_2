@@ -176,7 +176,7 @@ class CorrBlock(object):
 				
 					cp_name = '{}--{}'.format(*cpair)
 					print(cp_name,file=output_file)
-					print(cp_name)
+					
 
 					loc1, cha1 = cpair[0].split('.')[2:4]
 					loc2, cha2 = cpair[1].split('.')[2:4]
@@ -267,8 +267,6 @@ class CorrBlock(object):
 
 	def update_data(self,t,win_len):
 
-		#print(self.data)
-	
 
 		for trace in self.data:
 			
