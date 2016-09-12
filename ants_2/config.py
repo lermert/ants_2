@@ -279,17 +279,18 @@ class ConfigCorrelation(object):
             raise TypeError(msg)
 
 
-        if not isinstance(self.bandpass,list) and self.bandpass is not None:
-            #if self.bandpass is None: pass
-            msg = '\'bandpass\' in config_correlation.json must be list'
-            raise TypeError(msg)
-        else:
-            #if self.bandpass is None: pass
-            try:
-                bp = [float(n) for n in self.bandpass]
-            except:
-                msg = '\'bandpass\' in config_correlation.json must be [freqmin, freqmax,order]'
-                raise ValueError(msg)
+        if self.bandpass is not None:
+            if not isinstance(self.bandpass,list):
+                
+                msg = '\'bandpass\' in config_correlation.json must be list'
+                raise TypeError(msg)
+            else:
+                #if self.bandpass is None: pass
+                try:
+                    bp = [float(n) for n in self.bandpass]
+                except:
+                    msg = '\'bandpass\' in config_correlation.json must be [freqmin, freqmax,order]'
+                    raise ValueError(msg)
 
 
         if not isinstance(self.ram_prefilt,list):
