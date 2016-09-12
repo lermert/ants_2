@@ -106,14 +106,13 @@ class CorrBlock(object):
 			
 
 			print(t,file=output_file)
-			print(t)
+			
 			
 			
 			# - check endtime, if necessary, add data from 'later' file
 			self.update_data(t, win_len_seconds)
 			
-			#if upd:
-		#		print(summary.summarize(all_objects))
+			
 
 			# - slice the traces
 			
