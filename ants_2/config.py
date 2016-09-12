@@ -429,7 +429,7 @@ class ConfigCorrelation(object):
             # string
             
         if not isinstance(self.input_format,str):
-            
+            print(type(self.input_format))
             msg = '\'input_format\' in config_correlation.json must be a string.'
             raise ValueError(msg)
 
