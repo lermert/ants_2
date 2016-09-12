@@ -271,7 +271,6 @@ class ConfigCorrelation(object):
 
 
         if not isinstance(self.indirs,list):
-            if self.indirs is None: pass
             msg = '\'indirs\' in config_correlation.json must be list'
             raise TypeError(msg)
 
@@ -280,12 +279,12 @@ class ConfigCorrelation(object):
             raise TypeError(msg)
 
 
-        if not isinstance(self.bandpass,list):
-            if self.bandpass is None: pass
+        if not isinstance(self.bandpass,list) and self.bandpass is not None:
+            #if self.bandpass is None: pass
             msg = '\'bandpass\' in config_correlation.json must be list'
             raise TypeError(msg)
         else:
-            if self.bandpass is None: pass
+            #if self.bandpass is None: pass
             try:
                 bp = [float(n) for n in self.bandpass]
             except:
