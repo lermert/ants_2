@@ -6,7 +6,7 @@ import scripts
 from ants_2.config import ConfigDownload, ConfigPreprocess, ConfigCorrelation
 import warnings
 
-#warnings.simplefilter("ignore")
+warnings.filterwarnings("ignore",message='Found more than one matching coordinates. Returning first.')
 
 @click.group()
 def run():
