@@ -3,11 +3,17 @@ Download, process and correlate continuous data
 
 # Dependencies
 obspy
+
 openmpi
+
 mpi4py
+
 h5py
+
 basemap
+
 mock
+
 click
 
 
@@ -27,4 +33,4 @@ This should display a list of commands.
 
 # mpi4py
 
-Sometimes causes problems on mac. In some cases installing mpi4py with pip after having installed the other dependencies with conda works better.
+Sometimes mpi4py causes problems when running on mac OS. In some cases installing mpi4py with pip after having installed the other dependencies with conda works better.
