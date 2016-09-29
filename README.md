@@ -4,11 +4,9 @@ Download, process and correlate continuous data
 # Dependencies
 obspy
 
-openmpi
+mpi4py (uses openmpi or mpich)
 
-mpi4py
-
-h5py
+h5py (uses hdf5)
 
 basemap
 
