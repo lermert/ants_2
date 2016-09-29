@@ -14,7 +14,7 @@ mock
 
 click
 
-It is recommended to install the dependencies with anaconda (https://www.continuum.io/downloads), except in the case of mpi4py where depending on OS pip may work better.
+It is recommended to install the dependencies with anaconda (https://www.continuum.io/downloads), except in the case of mpi4py where depending on OS installation using pip may work better.
 
 # Installation
 
