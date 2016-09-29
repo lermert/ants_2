@@ -14,15 +14,15 @@ mock
 
 click
 
+It is recommended to install the dependencies with anaconda (https://www.continuum.io/downloads), except in the case of mpi4py where depending on OS pip may work better.
 
 # Installation
 
-After cloning, everything should be set up by running:
+After cloning, ants should be set up by running:
 
 pip install -v -e .
 
-in the ants_2 directory. This should also check for the necessary dependencies.
-
+in the ants_2 directory.
 If successfully installed, one should be able to call the scripts with:
 
 ants
