@@ -423,8 +423,7 @@ class PrepStream(object):
 					seedresp=inv,
 					sacsim=True,
 					pitsasim=False,
-					water_level=waterlevel,
-					output=unit)
+					water_level=waterlevel)
 			if verbose:
 			    print('* removed instrument response using seedresp',file=self.ofid)
 		        
