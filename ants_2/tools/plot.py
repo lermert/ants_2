@@ -1,6 +1,7 @@
 
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
+from matplotlib import mlab
 import matplotlib.tri as tri
 from scipy.signal import sosfilt
 from glob import glob
@@ -337,3 +338,56 @@ def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
 		plt.show()
 	else:
 		plt.savefig(outfile,format='png')
+
+
+def plot_spectrogram(trace,win_samples,overlap,pad=None,mode='psd',
+	fmin=None,fmax=None,clip=None,cmap=plt.cm.plasma,figshape=(10,2),dpi=200, 
+	time_divide=86400,title=None,outfile=None):
+	
+    spec, freq, t = mlab.specgram(trace.data, NFFT=win_samples, Fs=trace.stats.sampling_rate,
+    	detrend=mlab.detrend_none, window=mlab.window_hanning, noverlap=overlap,
+    	pad_to=pad, sides='default',scale_by_freq=None, mode=mode)
+    
+    
+    
+    plt.figure(figsize=figshape,dpi=dpi)
+    ax = plt.subplot(111)
+    
+    if fmin is not None:
+    	i0 = np.argmin(np.abs(freq-fmin))
+    else:
+    	i0 = 0
+    if fmax is not None:
+    	i1 = np.argmin(np.abs(freq-fmax))
+    else:
+    	i1 = -1
+    
+    
+    
+    
+    
+    if clip is not None:
+    	vmin = clip[0]
+    	vmax = clip[1]
+    else:
+    	vmin = np.min(spec)
+    	vmax = np.max(spec)
+
+
+    spec_plot = np.flipud(spec[i0:i1,:])
+
+    ax.imshow(spec_plot,
+    	extent=(t[0]/time_divide,t[-1]/time_divide,freq[i0],freq[i1]),
+    	vmin=vmin,vmax=vmax,cmap=cmap,interpolation='nearest')
+    
+    ax.axis('tight')
+    if title is None:
+    	plt.title(trace.stats.starttime)
+    else:
+    	plt.title(title)
+
+    if outfile is None:
+    	plt.show()
+    else:
+    	plt.savefig(outfile)
+    	plt.close('all')
