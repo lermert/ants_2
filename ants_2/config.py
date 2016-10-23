@@ -180,6 +180,8 @@ DEFAULT_Correlation = {
     "cap_glitch": False,
     "cap_thresh": 10.0,
     "bandpass": None,
+    "taper": 0.05,
+    "filt_rms": [],
     "whiten": False,
     "white_freqmin": 0.0,
     "white_freqmax": 0.0,
@@ -226,7 +228,9 @@ class ConfigCorrelation(object):
         self.ram_window = None
         self.ram_prefilt = None
         self.onebit = None
-
+        self.taper = None
+        self.filt_rms = None
+       
         self.initialize()
 
 
@@ -275,6 +279,7 @@ class ConfigCorrelation(object):
             raise TypeError(msg)
 
         if not True in [os.path.exists(d) for d in self.indirs]:
+            print(self.indirs)
             msg = '\'indirs\' specified in config_correlation.json do not exist.'
             raise TypeError(msg)
 
@@ -418,7 +423,16 @@ class ConfigCorrelation(object):
                 
                 msg = '\'ram_window\' in config_correlation.json must be a number.'
                 raise ValueError(msg)
+
+        
+        if not isinstance(self.taper,float):
             
+            msg = '\'taper\' in config_correlation.json must be a float that specifies the tapering percentage.'
+            raise ValueError(msg)
+            
+        if self.taper > 0.5:
+            msg = 'Taper is more than 50%.'
+            raise ValueError(msg)
 
             
         

@@ -24,14 +24,14 @@ def get_station_info(stats):
     lat2 = stats.sac.evla
     lon2 = stats.sac.evlo
     dist = stats.sac.dist
-    az = gps2dist_azimuth(lat1,lon1,lat2,lon2)[2]
+    az,baz = gps2dist_azimuth(lat1,lon1,lat2,lon2)[1:]
     
     
-    return([sta1,sta2,lat1,lon1,lat2,lon2,dist,az])
+    return([sta1,sta2,lat1,lon1,lat2,lon2,dist,az,baz])
 
      
 
-def measurement(mtype,filt,**options):
+def measurement(mtype,filt,dir,**options):
     
     """
     Get measurements on noise correlation data and synthetics. 
@@ -39,11 +39,11 @@ def measurement(mtype,filt,**options):
     """
     
     
-    files = glob(os.path.join('data','correlations','*.SAC'))
+    files = glob(os.path.join(dir,'*.SAC'))
     
     
     columns = ['sta1','sta2','lat1','lon1','lat2','lon2','dist','az',
-    'obs','snr']
+    'baz','obs','snr']
     measurements = pd.DataFrame(columns=columns)
     
     
@@ -66,7 +66,7 @@ def measurement(mtype,filt,**options):
            
             # Filter
             if filt is not None:
-
+                tr_o.taper(type='cosine',max_percentage=0.05)
                 tr_o.filter('bandpass',freqmin=filt[0],freqmax=filt[1],
                     corners=filt[2],zerophase=True)
             

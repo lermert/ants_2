@@ -109,8 +109,8 @@ def measure():
 @click.option('--plot',help='show plots of the correlations',is_flag=True)
 @click.option('--sep_noise',help='separation of noise window behind signal window as a multiple of the chosen window halfwidth',default=1)
 @click.option('--overlap',help='If set to True, measurements will be taken even if causal and acausal window overlap',default=False)
-
-def ln_energy_ratio(bandpass,speed,hw,window,plot,sep_noise,overlap):
+@click.option('--dir',help='Specify input directory',default='data/correlations',type=str)
+def ln_energy_ratio(bandpass,speed,hw,dir,window,plot,sep_noise,overlap):
     """
 
     Measure logarithmic energy ratio.
@@ -149,7 +149,7 @@ def ln_energy_ratio(bandpass,speed,hw,window,plot,sep_noise,overlap):
     window_params['plot']               =    bool(plot)
     window_params['causal_side']        =    True
     
-    measurement(mtype='ln_energy_ratio',filt=bandpass,
+    measurement(mtype='ln_energy_ratio',dir=dir,filt=bandpass,
         g_speed=speed,window_params=window_params)
 
 #@click.option('--causal',help='In case of using energy_diff measurement, this option selects causal or acausal branch of the correlation',default=True)
@@ -167,6 +167,7 @@ def ln_energy_ratio(bandpass,speed,hw,window,plot,sep_noise,overlap):
 @click.option('--ray_step',help='discretizing step of ray in m',default=1e5)
 @click.option('--bin_size',help='Geographic bin size in degree',default=5.)
 @click.option('--min_snr',help='Minimum signal to noise ratio for meausurements',default=0.0)
+
 def sourcemap(f,speed,q,ray_step,bin_size,min_snr):
     
     """
@@ -211,12 +212,13 @@ def plot():
     pass
     
 @plot.command(help='Plot station map')
+@click.option('--dir',help='Directory containing available data',default='processed',type=str)
 @click.option('--bluemarble',help='Plot map background', is_flag=True)
 @click.option('--proj',help='Selects matplotlib projection',default='merc',type=str)
-def station_map(proj,bluemarble):
+def station_map(proj,bluemarble,dir):
 
     from tools.plot import plot_stations
-    plot_stations(projection=proj,bluemarble=bluemarble)
+    plot_stations(projection=proj,bluemarble=bluemarble,data=dir)
 
 
 
@@ -257,16 +259,39 @@ def correlation(input_file,bandpass):
 @plot.command(help='Plot section of correlation traces')
 @click.argument('directory')
 @click.option('--bandpass',help='freqmin,freqmax,order: Butterworth bandpass filter',default=None,type=str)
-
-def section(directory,bandpass):
+@click.option('--centre',help='lon,lat: Plot correlations so that they show wave propagation away from this point',
+    default=None,type=str)
+@click.option('--baz',help='min_azimuth,max_azimuth: Plot only those correlation traces that fall into the specified azimuth range.',
+    default=None,type=str)
+def section(directory,bandpass,centre,baz):
     if bandpass is not None:
        try:
            bandpass = [float(nr) for nr in bandpass.split(',')]
        except:
            print('Bandpass format must be: freqmin,freqmax,order')
            bandpass = None
+    if centre is not None:
+        try:
+            centre = [float(nr) for nr in centre.split(',')]
+        except:
+            print('Centre format must be: lon, lat')
+            centre = None
+        if centre[0] < -180. or centre[0] > 180. or centre[1] < -90. or centre[1] > 90.:
+            print('Centre format must be: lon, lat with lon in [-180,180] and lat in [-90,90]')
+            centre = None
+    if baz is not None:
+        try:
+            baz = [float(nr) for nr in baz.split(',')]
+        except:
+            print('Azimuth format must be: min_azimuth, max_azimuth')
+            baz = None
+        if baz[0] < 0. or baz[0] > 360. or baz[1] < 0. or baz[1] > 360. or baz[1] < baz[0]:
+            print('Azimuth format must be: min_azimuth, max_azimuth. Azimuth cannot be < 0 or > 360.')
+            baz = None
+
+
     from tools.plot import plot_section
-    plot_section(directory,bandpass)
+    plot_section(directory,bandpass=bandpass,centre=centre,az_selection=baz)
 
 
 

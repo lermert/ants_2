@@ -12,7 +12,7 @@ class CorrTrace(object):
 	"""
 
 	def __init__(self,cha1,cha2,sampling_rate,corr_type='ccc',
-		t0=None,t1=None,stck_int=None,prepstring=None,
+		rms_filts=None,t0=None,t1=None,stck_int=None,prepstring=None,
 		window_length=None,overlap=None,corr_params=None):
 
 		
@@ -82,9 +82,13 @@ class CorrTrace(object):
 		self.window_length = window_length
 		self.overlap = overlap
 		self.prepstring = prepstring
+		self.rms_filts = rms_filts
+		
 
 		# open the file to dump intermediate stack results
 		if self.stck_int is not None:
+			self.rms1 = None
+			self.rms2 = None
 			int_file = '{}.{}.windows.h5'.format(self.id,self.corr_type)
 			int_file = os.path.join('data','correlations',int_file)
 			int_file = h5py.File(int_file,'a')
@@ -95,6 +99,7 @@ class CorrTrace(object):
 			int_stats.attrs['channel1'] 		= self.id1
 			int_stats.attrs['channel2'] 		= self.id2
 			int_stats.attrs['distance']			= self.dist
+			int_stats.attrs['rms_filt']			= self.rms_filts
 
 			# Prepare a group for writing the data window
 			self.int_file = int_file
@@ -105,11 +110,12 @@ class CorrTrace(object):
 	
 
 
-	def _add_corr(self,corr,t):
+	def _add_corr(self,corr,t,rms1=None,rms2=None):
 
 		"""
 		Add one correlation window to the stack
 		"""
+
 
 		
 		if self.stack.stats.npts == 0:
@@ -117,10 +123,11 @@ class CorrTrace(object):
 			# set the lag
 			self.nlag = self.stack.stats.npts
 			self.maxlag = (self.nlag - 1)/2 * self.sampling_rate
+
 		else:
 			self.stack.data += corr # This will cause an error if the correlations have different length.
-
-		
+			
+			
 		self.cnt_tot += 1
 
 
@@ -130,12 +137,21 @@ class CorrTrace(object):
 
 			if self.pstak is not None: 
 				self.pstak += corr # This will cause an error if the correlations have different length.
+				
+				if rms1 is not None:
+					self.rms1 += rms1 / self.stck_int
+				if rms2 is not None:	
+					self.rms2 += rms2 / self.stck_int
 			else:
 				self.pstak = corr.copy()
+				if rms1 is not None:
+					self.rms1 = rms1 / self.stck_int
+				if rms2 is not None:
+					self.rms2 = rms2 / self.stck_int
 
 			if self.cnt_int == self.stck_int:
 				# write intermediate result
-				self.write_int(t)
+				self.write_int(t,rms1,rms2)
 				self.cnt_int = 0
 				self.pstak = None
 
@@ -165,11 +181,15 @@ class CorrTrace(object):
     	
 		
 
-	def write_int(self,t):
+	def write_int(self,t,rms1=None,rms2=None):
 
 		tstr = t.strftime("%Y.%j.%H.%M.%S")
 		
-		self.interm_data.create_dataset(tstr,data=self.pstak)		
+		dat = self.interm_data.create_dataset(tstr,data=self.pstak)
+		if rms1 is not None:
+			dat.attrs['rms1'] = rms1
+		if rms2 is not None:
+			dat.attrs['rms2'] = rms2
 #
 #
 	def add_sacmeta(self):

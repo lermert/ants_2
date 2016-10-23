@@ -1,4 +1,5 @@
-
+import matplotlib
+matplotlib.use('Qt4Agg')
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from matplotlib import mlab
@@ -12,6 +13,7 @@ import time
 import numpy as np
 
 from obspy import read_inventory, read, Stream
+from obspy.geodetics import gps2dist_azimuth
 from ants_2.tools.treatment import bandpass as get_bandpass
 
 
@@ -244,7 +246,7 @@ def plot_correlation(f, bandpass=None):
 
 
 
-def plot_section(pathname,bandpass=None,fmt='SAC'):
+def plot_section(pathname,bandpass=None,fmt='SAC',centre=None,az_selection=None):
 
 	
 	inpt = glob(os.path.join(pathname,'*.{}'.format(fmt.lower())))
@@ -261,10 +263,39 @@ def plot_section(pathname,bandpass=None,fmt='SAC'):
 	for t in traces:
 
 		t.stats.distance = t.stats.sac.dist
+		sta1 = t.stats.station.strip()
+		sta2 = t.stats.sac.kevnm.strip()
+
+		if az_selection is not None:
+
+			if t.stats.sac.baz < az_selection[0] or t.stats.sac.baz > az_selection[1]:
+
+				if t.stats.sac.az >= az_selection[0] and t.stats.sac.az <= az_selection[1]:
+
+					t.data = t.data[::-1]
+					print("Trace changed from {}--{} to {}--{}.".format(sta1,sta2,sta2,sta1))
+				else:	
+					traces.remove(t)
+		
+
+		if centre is not None:
+			
+			dist_c_1 = gps2dist_azimuth(centre[1],centre[0],
+				t.stats.sac.stla,t.stats.sac.stlo)[0]
+			dist_c_2 = gps2dist_azimuth(centre[1],centre[0],
+				t.stats.sac.evla,t.stats.sac.evlo)[0]
+
+			if dist_c_1 > dist_c_2:
+				t.data = t.data[::-1]
+				print("Trace changed from {}--{} to {}--{}.".format(sta1,sta2,sta2,sta1))
+
+		
+
 
 	if bandpass is not None:
+		traces.taper(type='cosine',max_percentage=0.05)
 		traces.filter('bandpass',freqmin=bandpass[0],
-			freqmax=bandpass[1],corners=bandpass[2])
+			freqmax=bandpass[1],corners=bandpass[2],zerophase=True)
 
 	# maxlag seems to be requested in samples..this must be a bug in obspy.
 	maxlag = (traces[0].stats.npts-1) / 2.0 
@@ -306,7 +337,7 @@ def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
 	elif cmap == 'div':
 		cmap = plt.cm.bwr
 
-	m = Basemap(rsphere=6378137,resolution='c',projection='cyl',
+	m = Basemap(rsphere=6378137,resolution='i',projection='cyl',
 	llcrnrlat=np.min(map_y),urcrnrlat=np.max(map_y),
 	llcrnrlon=np.min(map_x),urcrnrlon=np.max(map_x))
 

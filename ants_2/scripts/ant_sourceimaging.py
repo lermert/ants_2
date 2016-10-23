@@ -32,7 +32,9 @@ class sourcemap(object):
 				cmap='seq',vmin=0,vmax=1.0)
 
 
-	def _bin_kernels(self,ddeg_lon,ddeg_lat,lonmin=-180,lonmax=180,latmin=-90,latmax=90):
+	def _bin_kernels(self,ddeg_lon,ddeg_lat,lonmin=90,lonmax=160,latmin=15,latmax=75):
+
+		print("Attention, Japan setting hardcoded...")
 
 		lats = np.arange(latmin,latmax+ddeg_lat,ddeg_lat)
 		lons = np.arange(lonmin,lonmax+ddeg_lon,ddeg_lon)
@@ -148,7 +150,12 @@ class sourcemap(object):
 				
 			
 			# Multiply by measurement
-			kernel[:,2] *= self.data.at[i,'obs'] * -1.
+			kernel[:,2] *= self.data.at[i,'obs'] * -1. * -1. #The first -1 is because 
+			# the definition of the kernel is (A-A_obs) * K_dataless, and here A=0, so we
+			# need just -A_obs.
+			# The second -1 is because we want to look at the negative of the misfit gradient
+			# (we want to decrease misfit by our update; so that is the update direction)
+
 	
 			# append ray coordinates and kernel to the temporary file
 			for k in range(2*num_seg):

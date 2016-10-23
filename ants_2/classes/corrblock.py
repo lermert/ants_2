@@ -8,7 +8,7 @@ import re
 
 
 from ants_2.tools.bookkeep import name_correlation_file
-from ants_2.tools.util import get_geoinf
+from ants_2.tools.util import get_geoinf, rms
 from ants_2.classes.corrtrace import CorrTrace
 from ants_2.tools.correlations import cross_covar
 from ants_2.tools.treatment import ram_norm, whiten, cap, bandpass
@@ -50,7 +50,8 @@ class CorrBlock(object):
 
 				
 				self._correlations[cp_name] = CorrTrace(pair[0],pair[1],
-				self.sampling_rate,stck_int=cfg.interm_stack)
+				self.sampling_rate,rms_filts=cfg.filt_rms,
+				stck_int=cfg.interm_stack)
 				
 
 
@@ -129,7 +130,23 @@ class CorrBlock(object):
 			# - Apply preprocessing
 			for w in windows:
 				
-			
+				w.taper(type='hann',max_percentage=self.cfg.taper)	
+				# Determine the RMS values for data selection during stacking
+				if self.cfg.filt_rms is not None:
+					nfreq = len(self.cfg.filt_rms)
+					win_rms = np.zeros(nfreq)
+					for i_fband in range(nfreq):
+
+						wfilt = w.copy()
+						wfilt.filter('bandpass',
+							freqmin=self.cfg.filt_rms[i_fband][0],
+							freqmax=self.cfg.filt_rms[i_fband][1],corners=5)
+						win_rms[i_fband] = rms(wfilt.data)
+						#stdev = np.std(wfilt.data)
+						#win_rms[i_fband,1] = rms(np.clip(wfilt.data,-3*stdev,3*stdev))
+
+					w.stats.rms = win_rms
+				
 				if self.cfg.bandpass is not None:
 					w_temp = sosfilt(sos,w.data)
 					w.data = sosfilt(sos,w_temp[::-1])[::-1]
@@ -147,6 +164,9 @@ class CorrBlock(object):
 
 				if self.cfg.ram_norm:
 					ram_norm(w,self.cfg.ram_window,self.cfg.ram_prefilt)
+
+				# attach some 'diagnostic parameters'
+
 				
 
 			# - station pair loop
@@ -216,7 +236,8 @@ class CorrBlock(object):
 					# - add to stack
 					
 					if len(correlation) == 2 * max_lag_samples + 1:
-						self._correlations[cp_name]._add_corr(correlation,t)
+						self._correlations[cp_name]._add_corr(correlation,t,
+							rms1=tr1.stats.rms,rms2=tr2.stats.rms)
 					
 						
 
@@ -297,7 +318,7 @@ class CorrBlock(object):
 
 
 				
-				# Get the last bit of the trace that we still need
+				# Get the last bit of the previous trace that we still need
 				self.data.trim(starttime=t)
 
 				#self.data._cleanup()
