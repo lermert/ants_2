@@ -259,11 +259,12 @@ def correlation(input_file,bandpass):
 @plot.command(help='Plot section of correlation traces')
 @click.argument('directory')
 @click.option('--bandpass',help='freqmin,freqmax,order: Butterworth bandpass filter',default=None,type=str)
+@click.option('--component',help='Component to plot: ZZ, RR, TT, RT etc.',default='ZZ',type=str)
 @click.option('--centre',help='lon,lat: Plot correlations so that they show wave propagation away from this point',
     default=None,type=str)
 @click.option('--baz',help='min_azimuth,max_azimuth: Plot only those correlation traces that fall into the specified azimuth range.',
     default=None,type=str)
-def section(directory,bandpass,centre,baz):
+def section(directory,bandpass,component,centre,baz):
     if bandpass is not None:
        try:
            bandpass = [float(nr) for nr in bandpass.split(',')]
@@ -291,7 +292,7 @@ def section(directory,bandpass,centre,baz):
 
 
     from tools.plot import plot_section
-    plot_section(directory,bandpass=bandpass,centre=centre,az_selection=baz)
+    plot_section(directory,bandpass=bandpass,comp=component,centre=centre,az_selection=baz)
 
 
 

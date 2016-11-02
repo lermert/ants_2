@@ -246,11 +246,11 @@ def plot_correlation(f, bandpass=None):
 
 
 
-def plot_section(pathname,bandpass=None,fmt='SAC',centre=None,az_selection=None):
+def plot_section(pathname,bandpass=None,comp='ZZ',fmt='SAC',centre=None,az_selection=None):
 
-	
-	inpt = glob(os.path.join(pathname,'*.{}'.format(fmt.lower())))
-	inpt.extend(glob(os.path.join(pathname,'*.{}'.format(fmt.upper()))))
+	# TOdo components properly!
+	inpt = glob(os.path.join(pathname,'*{}--*{}.*.{}'.format(comp[0],comp[1],fmt.lower())))
+	inpt.extend(glob(os.path.join(pathname,'*{}--*{}.*.{}'.format(comp[0],comp[1],fmt.upper()))))
 
 	traces = Stream()
 	for path in inpt:

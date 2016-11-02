@@ -1,6 +1,6 @@
 from ants_2.tools.util import get_geoinf
 from ants_2.tools.bookkeep import name_correlation_file
-from obspy import Trace
+from obspy import Trace, UTCDateTime
 import h5py
 import os
 
@@ -11,48 +11,55 @@ class CorrTrace(object):
 	Object holds correlation data along with metainformation (station id, geographic location).
 	"""
 
-	def __init__(self,cha1,cha2,sampling_rate,corr_type='ccc',
+	# If the handling of multiple correlation windows is moved to corrstack, then the 
+	# stck_int and overlap parameters become obsolete
+	def __init__(self,data=None,cha1=None,cha2=None,sampling_rate=1.0,corr_type='ccc',
 		rms_filts=None,t0=None,t1=None,stck_int=None,prepstring=None,
 		window_length=None,overlap=None,corr_params=None):
 
-		
-		self.stack = Trace() # These traces get 01,01,1970 as start date, a completely random choice of start time...no better idea. 
+		# By using obspy trace object, many things can be inherited...such as filtering, very convenient
+		if data is not None:
+			self.stack = Trace(data=data) # These traces get 01,01,1970 as start date, a completely random choice of start time...no better idea. 
+		else:
+			self.stack = Trace()
+
 		self.pstak = None
 		self.maxlag = None # maxlag will be set the first time a correlation is added.
 
 		# Parameters that must be set 
-		self.cnt_tot = 0
-		self.cnt_int = 0
+		self.cnt_tot = len(self.stack) # how many traces
+		self.cnt_int = len(self.stack)
 		self.id1   = cha1
 		self.id2   = cha2
 
-		if self.id1[-1] == 'E':
-			cha = self.id1.split('.')[-1]
-			cha = cha[0] + cha [1] + 'T'
-			inf = self.id1.split('.')
-			self.id1 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
+		# This is bollocks! It HAS to be set properly outside of here.
+		# if self.id1[-1] == 'E':
+		# 	cha = self.id1.split('.')[-1]
+		# 	cha = cha[0] + cha [1] + 'T'
+		# 	inf = self.id1.split('.')
+		# 	self.id1 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
 
-		if self.id1[-1] == 'N':
-			cha = self.id1.split('.')[-1]
-			cha = cha[0] + cha [1] + 'R'
-			inf = self.id1.split('.')
-			self.id1 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
+		# if self.id1[-1] == 'N':
+		# 	cha = self.id1.split('.')[-1]
+		# 	cha = cha[0] + cha [1] + 'R'
+		# 	inf = self.id1.split('.')
+		# 	self.id1 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
 
-		if self.id2[-1] == 'E':
-			cha = self.id2.split('.')[-1]
-			cha = cha[0] + cha [1] + 'T'
-			inf = self.id2.split('.')
-			self.id2 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
+		# if self.id2[-1] == 'E':
+		# 	cha = self.id2.split('.')[-1]
+		# 	cha = cha[0] + cha [1] + 'T'
+		# 	inf = self.id2.split('.')
+		# 	self.id2 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
 
-		if self.id2[-1] == 'N':
-			cha = self.id2.split('.')[-1]
-			cha = cha[0] + cha [1] + 'R'
-			inf = self.id2.split('.')
-			self.id2 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
-
+		# if self.id2[-1] == 'N':
+		# 	cha = self.id2.split('.')[-1]
+		# 	cha = cha[0] + cha [1] + 'R'
+		# 	inf = self.id2.split('.')
+		# 	self.id2 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
 
 		self.id    = self.id1 + '--' + self.id2
 		self.corr_type = corr_type
+		
 
 		self.stack.stats.sampling_rate = sampling_rate
 		self.sampling_rate = sampling_rate
@@ -77,14 +84,25 @@ class CorrTrace(object):
 		# Parameters that are optional and will be ignored if they are set to None
 		self.stck_int = stck_int
 		self.params = corr_params
-		self.begin = t0
-		self.end   = t1
+		
 		self.window_length = window_length
 		self.overlap = overlap
 		self.prepstring = prepstring
 		self.rms_filts = rms_filts
+
+		if t0:
+			print t0
+			self.begin = UTCDateTime(t0)
+		else:
+			self.begin = None
+
+		if t1:
+			self.end   = UTCDateTime(t1)
+		else:
+			self.end   = None
 		
 
+		# ToD! This functionality should be moved to corrstack
 		# open the file to dump intermediate stack results
 		if self.stck_int is not None:
 			self.rms1 = None
@@ -99,12 +117,17 @@ class CorrTrace(object):
 			int_stats.attrs['channel1'] 		= self.id1
 			int_stats.attrs['channel2'] 		= self.id2
 			int_stats.attrs['distance']			= self.dist
+			int_stats.attrs['window_length']	= self.window_length
 			int_stats.attrs['rms_filt']			= self.rms_filts
 
 			# Prepare a group for writing the data window
 			self.int_file = int_file
 			self.interm_data = int_file.create_group("corr_windows")
 
+
+	def __str__(self):
+		
+		return self.id
 
 
 	
@@ -160,10 +183,10 @@ class CorrTrace(object):
 		del corr
 
 
-	def write_stack(self):
+	def write(self,filename):
 
 		
-		filename = os.path.join('data','correlations','{}.SAC'.format(self.id))
+		#filename = os.path.join('data','correlations','{}.SAC'.format(self.id))
 
 		#- open file and write correlation function
 		if self.cnt_tot > 0:
@@ -176,11 +199,11 @@ class CorrTrace(object):
 
 		self.int_file.file.close()
 		
-		#- Only sac format now, maybe another format sometime
+		#- Only sac format
 		
     	
 		
-
+	# ToDo: This should be moved to corrstack
 	def write_int(self,t,rms1=None,rms2=None):
 
 		tstr = t.strftime("%Y.%j.%H.%M.%S")

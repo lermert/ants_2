@@ -43,15 +43,15 @@ class CorrBlock(object):
 		for cp in block.channel_pairs:
 			for pair in cp:
 
-				pair = [re.sub('E$','T',str) for str in pair]
-				pair = [re.sub('N$','R',str) for str in pair]
+				pair = [re.sub('E$','T',st) for st in pair]
+				pair = [re.sub('N$','R',st) for st in pair]
 				cp_name = '{}--{}'.format(*pair)
 				preprstring = self.get_prepstring()
 
 				
 				self._correlations[cp_name] = CorrTrace(pair[0],pair[1],
 				self.sampling_rate,rms_filts=cfg.filt_rms,
-				stck_int=cfg.interm_stack)
+				stck_int=cfg.interm_stack,window_length=cfg.time_window_length)
 				
 
 
@@ -251,7 +251,9 @@ class CorrBlock(object):
 
 		for corr in self._correlations.itervalues():
 			
-			corr.write_stack()
+			filename = os.path.join('data','correlations',
+				'{}.SAC'.format(corr.id))
+			corr.write(filename)
 
 		print('Finished a correlation block.')
 

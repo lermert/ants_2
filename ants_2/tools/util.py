@@ -52,11 +52,12 @@ def get_geoinf(id1,id2):
 			ix = stas[stas==id1.split('.')[1]].index[0]
 			lat1 = meta.at[ix,'lat']
 			lon1 = meta.at[ix,'lon']
+
 			ix = stas[stas==id2.split('.')[1]].index[0]
 			lat2 = meta.at[ix,'lat']
 			lon2 = meta.at[ix,'lon']
 			dist, az, baz = gps2dist_azimuth(lat1,lon1,lat2,lon2)
 		except:
-			print('Could not determine geographic information: metadata.csv or stationxml files needed!')
+			print('Could not determine geographic information: meta/metadata.csv or stationxml files needed!')
 
 	return lat1, lon1, lat2, lon2, dist, az, baz
