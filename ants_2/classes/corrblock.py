@@ -49,8 +49,8 @@ class CorrBlock(object):
 				preprstring = self.get_prepstring()
 
 				
-				self._correlations[cp_name] = CorrTrace(pair[0],pair[1],
-				self.sampling_rate,rms_filts=cfg.filt_rms,
+				self._correlations[cp_name] = CorrTrace(cha1=pair[0],cha2=pair[1],
+				sampling_rate=self.sampling_rate,rms_filts=cfg.filt_rms,
 				stck_int=cfg.interm_stack,window_length=cfg.time_window_length)
 				
 

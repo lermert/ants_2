@@ -90,6 +90,40 @@ def correlation():
     correlate()
 
 
+#==============================================================================
+# Stacking
+#==============================================================================
+
+@run.command(help='Stacking.')
+
+@click.argument('input_dir')
+@click.argument('threshold_fix')
+@click.argument('threshold_var')
+@click.option('--threshold_cor',default=None)
+@click.option('--n_compare',help='Compare windows to so many other windows for\
+threshold 2.',default=24,type=int)
+@click.option('--comb_freq',help='Exclude if all frequency bands give 0 weights,\
+or if any give zero weights.',default='any',type=str)
+@click.option('--comb_thre',help='Exclude if all thresholds give 0 weights,\
+or if any give zero weights.',default='any',type=str)
+@click.option('--comb_trac',help='Exclude if all the two original traces give 0 weights,\
+or if any or them give zero weights.',default='any',type=str)
+@click.option('--t_start',help='Start time',default=None)
+@click.option('--t_end',help='End time',default=None)
+@click.option('--t_step',help='Time step in seconds; if set, then the stack will be written after each\
+time increment, i.e. if basic window is 1 hour and t_step is 6 hours, then after each 6\
+hours a stack will be written to file and a new stack started. If set to None, all windows\
+in the range t_start to t_end will be stacked.',default=None,type=float)
+
+@click.option('--min_win',help='Minimum number of windows, if a stack contains less, it will\
+not be written to file.',default=1,type=int)
+
+def stack(input_dir,threshold_fix,threshold_var,threshold_cor,
+    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win):
+    from scripts.ant_stacking import ant_stack
+    ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
+    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win)
+
 
 
 #==============================================================================
