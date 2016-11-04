@@ -1,4 +1,5 @@
 import os
+import re
 from glob import glob
 from obspy import UTCDateTime
 from copy import deepcopy
@@ -45,6 +46,17 @@ def name_processed_file(stats,startonly=False):
 def name_correlation_file(sta1,sta2,corr_type,fmt='windows.h5'):
 
     #name = '{}--{}.{}.{}'.format(sta1,sta2,corr_type,fmt)
+
+
+    # forcefully replace E, N channels by R, T channels: Rotation is always performed.
+    band1 = sta1.split('.')[-1][0:2]
+    band2 = sta2.split('.')[-1][0:2]
+
+    sta1 = re.sub('\.'+band1+'E','.'+band1+'T',sta1)
+    sta2 = re.sub('\.'+band2+'E','.'+band2+'T',sta2)
+    sta1 = re.sub('\.'+band1+'N','.'+band1+'R',sta1)
+    sta2 = re.sub('\.'+band2+'N','.'+band2+'R',sta2)
+
     name = '{}--{}.{}.{}'.format(sta1,sta2,corr_type,fmt)
 
     return(name)
@@ -283,6 +295,6 @@ class correlation_inventory(object):
         inventory = {c: self.files[c] for c in block.channels}
         block.inventory = deepcopy(inventory)
 
-        # No channels are found if updating, and those pairs have already been computed.
+        # No channels are found if updating and those pairs have already been computed. So channels may be empty.
         if block.channels != []: 
             self.blocks.append(block)
