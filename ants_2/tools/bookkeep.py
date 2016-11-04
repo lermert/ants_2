@@ -42,10 +42,11 @@ def name_processed_file(stats,startonly=False):
     return filenew
             
 
-def name_correlation_file(sta1,sta2,corr_type,fmt='SAC'):
+def name_correlation_file(sta1,sta2,corr_type,fmt='windows.h5'):
 
+    #name = '{}--{}.{}.{}'.format(sta1,sta2,corr_type,fmt)
     name = '{}--{}.{}.{}'.format(sta1,sta2,corr_type,fmt)
-   
+
     return(name)
 
 
