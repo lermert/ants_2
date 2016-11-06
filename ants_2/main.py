@@ -99,7 +99,11 @@ def correlation():
 @click.argument('input_dir')
 @click.argument('threshold_fix')
 @click.argument('threshold_var')
-@click.option('--threshold_cor',default=None)
+@click.argument('threshold_cor')
+
+@click.option('--plot',is_flag=True,default=False)
+@click.option('--filt',help='bandpass filter fmin,fmax,corners',default=None)
+
 @click.option('--n_compare',help='Compare windows to so many other windows for\
 threshold 2.',default=24,type=int)
 @click.option('--comb_freq',help='Exclude if all frequency bands give 0 weights,\
@@ -119,10 +123,20 @@ in the range t_start to t_end will be stacked.',default=None,type=float)
 not be written to file.',default=1,type=int)
 
 def stack(input_dir,threshold_fix,threshold_var,threshold_cor,
-    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win):
+    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win,filt,plot):
     from scripts.ant_stacking import ant_stack
+    
+
+    if isinstance(filt,unicode):
+        try:
+            filt = [float(f) for f in filt.split(',')]
+            print("Filtering between %g and %g Hz." %(filt[0],filt[1]))
+        except:
+           print('Bandpass format must be: freqmin,freqmax,order. Not filtering.')
+           filt = None
+
     ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
-    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win)
+    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win,filt,plot)
 
 
 
