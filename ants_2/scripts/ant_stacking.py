@@ -5,10 +5,12 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from obspy import Trace,UTCDateTime
 from glob import glob
+import pandas as pd
 import h5py
 import os
 import sys
 from ants_2.tools.util import get_geoinf, rms
+from ants_2.tools.windows import snratio
 from ants_2.tools.measurements import log_en_ratio, energy
 
 # #==============================================================================
@@ -145,7 +147,8 @@ def get_median_values(rms,n_compare):
 
 # Tasks:
 def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
-    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win,filt,plot):
+    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,
+    t_step,min_win,filt,plot,save):
 
 	#indir,threshold1,threshold2,filt,n_compare,comb_freq,
 	#comb_thre,comb_trac,plot,plot_allwin,t_start,t_end,t_step,r_speed,vfac):
@@ -158,42 +161,16 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 	
 
 
-	files = glob(os.path.join(input_dir,'*.h5'))
+	
 	
 	# Thresholds
 	threshold_fix = float(threshold_fix)
 	threshold_var = float(threshold_var)
 	threshold_cor = float(threshold_cor) if threshold_cor else None
 
-
-
-	# Times
-	# if t_start is not None:
-	# 	t_s = UTCDateTime(t_start)
-	# else:
-	# 	with h5py.File(files[0],'r') as fh: 
-			
-	# 		tstr = '{},{},{},{},{}'.format(*fh['corr_windows'].keys()[0].split('.'))
-	# 		t_s = UTCDateTime(tstr)
-
-
-	# with h5py.File(files[0],'r') as fh: 
-		
-	# 	tstr = '{},{},{},{},{}'.format(*fh['corr_windows'].keys()[-1].split('.'))
-	# 	t_end_file = UTCDateTime(tstr)
-
-	# if t_end is not None:
-	# 	t_end_end = UTCDateTime(t_end)
-	# 	t_end_end = min(t_end_file,t_end_end)
-	# else:
-	# 	t_end_end = t_end_file
-
-	# if t_step is not None:
-	# 	t_e = t_start + t_step
-	# else:
-	# 	t_e = t_end_end
 	
 	# window params for measurement
+	files = glob(os.path.join(input_dir,'*BHZ*BHZ*.h5'))
 	g = 2900.
 	window_params = {}
 	window_params['hw'] = 60.
@@ -203,7 +180,19 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 	window_params['plot']               =  False
 	window_params['causal_side']        =  True
 
+
+	# Save the measurements
+	columns = ['sta1','sta2','lat1','lon1','lat2','lon2','dist','az',
+    'baz','t0','nstk','snr_c','snr_a','enr_c','enr_a','obs']
+	measurements = pd.DataFrame(columns=columns)
+	msr_cnt = 0
+
+
 	for inputfile in files:
+
+		# measurement to record
+		measurement = []
+
 		# open file
 		f = h5py.File(inputfile,'r')
 
@@ -216,7 +205,11 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 		id2 = f['stats'].attrs['channel2']
 		distance = f['stats'].attrs['distance']
 		print id1,id2
+		geoinf = get_geoinf(id1,id2)
 
+		measurement.append(id1)
+		measurement.append(id2)
+		measurement.extend(geoinf)
 
 		
 		# find nr. of correlation windows
@@ -232,8 +225,8 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 		rms2 = np.zeros((n_corrwin,n_freq))
 		rmsc = np.zeros(n_corrwin)
 		correlations = np.zeros((n_corrwin,n_lag))
-		msrs1 = np.zeros(n_corrwin)
-		msrs2 = np.zeros(n_corrwin)
+		# msrs1 = np.zeros(n_corrwin)
+		# msrs2 = np.zeros(n_corrwin)
 		t_windows = np.zeros(n_corrwin)
 		if plot:
 			wins_all = np.zeros((n_corrwin,n_lag))
@@ -267,10 +260,16 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 				corners=filt[2],zerophase=True)
 
 			rmsc[i] = rms(t_temp.data)
-			msrs1[i] = energy(t_temp,g,window_params)#log_en_ratio(t_temp,3300,window_params)
-			msrs2[i] = log_en_ratio(t_temp,g,window_params)
-			if plot:
-				wins_all[i,:] = t_temp.data
+			# msrs1[i] = energy(t_temp,g,window_params)#log_en_ratio(t_temp,3300,window_params)
+			
+			# # Getting the acausal energy
+			# window_params['causal_side'] = False
+			# msrs2[i] = energy(t_temp,g,window_params)
+
+			# window_params['causal_side'] = True
+			# msrs3[i] = log_en_ratio(t_temp,g,window_params)
+			# if plot:
+			# 	wins_all[i,:] = t_temp.data
 			# measurements
 			# Type of measurement now hardcoded, but should be option later on ToDo
 
@@ -364,8 +363,8 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 				corners=filt[2],zerophase=True)
 
 			rmsc[i] = rms(t_temp.data)
-			msrs1[i] = energy(t_temp,g,window_params)#log_en_ratio(t_temp,3300,window_params)
-			msrs2[i] = log_en_ratio(t_temp,g,window_params)
+			# msrs1[i] = energy(t_temp,g,window_params)#log_en_ratio(t_temp,3300,window_params)
+			# msrs2[i] = log_en_ratio(t_temp,g,window_params)
 			
 
 			i+=1
@@ -380,8 +379,8 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 
 		# combine weights and correlation weights
 		weights = np.multiply(weights,weights3)
-		msrs1 = np.array(msrs1)
-		msrs2 = np.array(msrs2)
+		# msrs1 = np.array(msrs1)
+		# msrs2 = np.array(msrs2)
 
 ###############################################################################
 # PLOT after selection...
@@ -433,7 +432,7 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 		# 	plt.show()
 
 ###############################################################################
-# TIME LOOP FOR INTERMEDIATE STACKS
+# TIME LOOP FORMS INTERMEDIATE STACKS
 ###############################################################################
 
 
@@ -451,19 +450,23 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			t_start = max(t_windows[0],UTCDateTime(t_start).timestamp)
 		else:
 			t_start = t_windows[0]
+		if t_step is not None:
+			t_step = float(t_step)
+		else:
+			t_step = t_end - t_start
 
-		t = t_start	
+		t = t_start
 		
 
 		#for i in range(n_corrwin):
 		while (t + t_step) <= t_end:
 
 			i0 = np.argmin(np.abs(t_windows-t))
-			print t_step
+			#print t_step
 			i1 = np.argmin(np.abs(t_windows-(t+t_step)))
-			print i0
-			print i1
-			print UTCDateTime(t_windows[i1])
+			#print i0
+			#print i1
+			#print UTCDateTime(t_windows[i1])
 
 
 			cnt_good = weights[i0:i1].sum()
@@ -526,61 +529,98 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 		# 	else:
 		# 		pass
 
+###############################################################################
+# TAKE MEASUREMENTS ON THE INTERMEDIATE STACKS, PREPARE PLOT
+###############################################################################
+
 
 		wins_all = np.zeros((len(stacks),n_lag))
 		
 		msrs1 = np.zeros(len(stacks))
 		msrs2 = np.zeros(len(stacks))
+		snrs1 = np.zeros(len(stacks))
+		snrs2 = np.zeros(len(stacks))
+		msrs3 = np.zeros(len(stacks))
 
 		for i in range(len(stacks)):
 
-			if plot:
-				
-				t_temp = Trace(data=stacks[i])
-				t_temp.stats.sampling_rate = Fs
-				t_temp.stats.sac = {}
-				t_temp.stats.sac['dist'] = distance
-				
-				if filt:
-					t_temp.taper(0.05)
-					t_temp.filter('bandpass',freqmin=filt[0],freqmax=filt[1],
-				corners=filt[2],zerophase=True)
+			
+			
+			t_temp = Trace(data=stacks[i])
+			t_temp.stats.sampling_rate = Fs
+			t_temp.stats.sac = {}
+			t_temp.stats.sac['dist'] = distance
+			
+			if filt:
+				t_temp.taper(0.05)
+				t_temp.filter('bandpass',freqmin=filt[0],freqmax=filt[1],
+			corners=filt[2],zerophase=True)
+
+			# causal energy msr
+			window_params['causal_side'] = True
+			msrs1[i] = energy(t_temp,g,window_params)#log_en_ratio(t_temp,3300,window_params)
+			snr_c = snratio(t_temp,g,window_params)
+			
+			# acausal energy msr
+			window_params['causal_side'] = False
+			msrs2[i] = energy(t_temp,g,window_params)
+			snr_a = snratio(t_temp,g,window_params)
+			
+			msrs3[i] = log_en_ratio(t_temp,g,window_params)
+
+			wins_all[i,:] = t_temp.data
 
 			
-			msrs1[i] = energy(t_temp,g,window_params)#log_en_ratio(t_temp,3300,window_params)
-			msrs2[i] = log_en_ratio(t_temp,g,window_params)
-			wins_all[i,:] = t_temp.data
-		
+
 			stack = Trace()
 			stack.stats.sampling_rate = Fs
 			stack.stats.sac = {}
 			stack.stats.sac.dist = distance
 			stack.data = stacks[i]
-
-			# save the stack.
-			stackfile = os.path.splitext(os.path.basename(inputfile))[0]
-			stackfile = os.path.splitext(stackfile)[0]
-			stackfile = os.path.splitext(stackfile)[0]
-			stackfile = stackfile + '.stack.{}.{}.SAC'.format(
-				UTCDateTime(tstarts[i]),
-				UTCDateTime(tends[i]))
-			stackfile = os.path.join(stack_dir,stackfile)
-			print cnts_good[i]
-			stack.stats.sac = sacmeta(id1,id2,Fs,stack.stats.npts,cnts_good[i])
-
-			#tdiff = diff_time(stack,r_speed)
-
-			stack.stats.station = id1.split('.')[1]
-			stack.stats.location = id1.split('.')[2]
-			stack.stats.channel = id1.split('.')[3]
-			stack.stats.network = id1.split('.')[0]
-			#stack.stats.sac['user1'] = max_med_amp(stack.data)
-			#stack.stats.sac['user2'] = len(weights)
-			#stack.stats.sac['user3'] = tdiff
-
-			#if cnt_good > 0:
+###############################################################################
+# Record the measurements for this station pair
+###############################################################################	
 			
-			stack.write(stackfile,format='SAC')
+			if not np.nan in [msrs1[i],msrs2[i],msrs3[i],snr_a,snr_c]:
+				msrinf = [str(UTCDateTime(tstarts[i])),
+					  cnts_good[i],snr_c,snr_a,msrs1[i],msrs2[i],
+					  msrs3[i]]
+			
+				measurements.loc[msr_cnt] = measurement + msrinf
+			
+				msr_cnt += 1
+
+
+
+			if save:
+				# save the stack.
+				stackfile = os.path.splitext(os.path.basename(inputfile))[0]
+				stackfile = os.path.splitext(stackfile)[0]
+				stackfile = os.path.splitext(stackfile)[0]
+				stackfile = stackfile + '.stack.{}.{}.SAC'.format(
+					UTCDateTime(tstarts[i]),
+					UTCDateTime(tends[i]))
+				stackfile = os.path.join(stack_dir,stackfile)
+				#print cnts_good[i]
+				stack.stats.sac = sacmeta(id1,id2,Fs,stack.stats.npts,cnts_good[i])
+
+				#tdiff = diff_time(stack,r_speed)
+
+				stack.stats.station = id1.split('.')[1]
+				stack.stats.location = id1.split('.')[2]
+				stack.stats.channel = id1.split('.')[3]
+				stack.stats.network = id1.split('.')[0]
+				#stack.stats.sac['user1'] = max_med_amp(stack.data)
+				#stack.stats.sac['user2'] = len(weights)
+				#stack.stats.sac['user3'] = tdiff
+				stack.write(stackfile,format='SAC')
+
+	
+
+
+###############################################################################
+# Plot
+###############################################################################	
 
 		if plot and len(stacks) > 0:
 			maxlag = (n_lag-1)/2
@@ -611,10 +651,10 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 
 			ax2 = fig.add_subplot(gs[2],sharey=ax0)
 			
-			msrs1 = [np.nan if val == 0 else val for val in msrs1]
-			msrs2 = [np.nan if val == 0 else val for val in msrs2]
-			ax1.plot(msrs1,np.arange(len(msrs1))+0.5,'d')
-			ax2.plot(msrs2,np.arange(len(msrs2))+0.5,'rd')
+			m1 = [np.nan if val == 0 else val for val in msrs1]
+			m2 = [np.nan if val == 0 else val for val in msrs2]
+			ax1.plot(m1,np.arange(len(m1))+0.5,'d')
+			ax2.plot(m2,np.arange(len(m2))+0.5,'rd')
 			#ax1.set_xticks([0.5*np.max(msrs1),np.max(msrs1)])
 			ax1.set_yticks([])
 			#ax2.set_xticks([0.5*np.max(msrs2),np.max(msrs2)])
@@ -625,28 +665,30 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			plt.show()
 
 
-		if not os.path.exists(os.path.join(stack_dir,'stackinfo.txt')):
-			with open(os.path.join(stack_dir,'stackinfo.txt'),'w') as fh:
-				fh.write('threshold_fix: ')
-				fh.write(str(threshold_fix))
-				fh.write('\nthreshold_var: ')
-				fh.write(str(threshold_var))
-				fh.write('\nthreshold_cor: ')
-				fh.write(str(threshold_cor))
-				fh.write('\nn_compare: ')
-				fh.write(str(n_compare))
-				fh.write('\ncomb_thre: ')
-				fh.write(str(comb_thre))
-				fh.write('\ncomb_freq: ')
-				fh.write(str(comb_freq))
-				fh.write('\ncomb_trac: ')
-				fh.write(str(comb_trac))
-				fh.write('\nt_start: ')
-				fh.write(str(t_start))
-				fh.write('\nt_end: ')
-				fh.write(str(t_end))
-				fh.write('\nt_step (seconds): ')
-				fh.write(str(t_step))
+	measurements.to_csv('measurements.csv',index=None)
+
+			
+	with open(os.path.join(stack_dir,'stackinfo.txt'),'w') as fh:
+		fh.write('threshold_fix: ')
+		fh.write(str(threshold_fix))
+		fh.write('\nthreshold_var: ')
+		fh.write(str(threshold_var))
+		fh.write('\nthreshold_cor: ')
+		fh.write(str(threshold_cor))
+		fh.write('\nn_compare: ')
+		fh.write(str(n_compare))
+		fh.write('\ncomb_thre: ')
+		fh.write(str(comb_thre))
+		fh.write('\ncomb_freq: ')
+		fh.write(str(comb_freq))
+		fh.write('\ncomb_trac: ')
+		fh.write(str(comb_trac))
+		fh.write('\nt_start: ')
+		fh.write(str(t_start))
+		fh.write('\nt_end: ')
+		fh.write(str(t_end))
+		fh.write('\nt_step (seconds): ')
+		fh.write(str(t_step))
 
 
 

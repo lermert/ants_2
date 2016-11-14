@@ -30,8 +30,8 @@ def get_station_info(stats):
     return([sta1,sta2,lat1,lon1,lat2,lon2,dist,az,baz])
 
      
-
-def measurement(mtype,filt,dir,**options):
+# ToDo: Channel choice
+def measurement(mtype,filt,dir,cha1='',cha2='',**options):
     
     """
     Get measurements on noise correlation data and synthetics. 
@@ -39,7 +39,7 @@ def measurement(mtype,filt,dir,**options):
     """
     
     
-    files = glob(os.path.join(dir,'*.SAC'))
+    files = glob(os.path.join(dir,'*{}*{}*.SAC'.format(cha1,cha2)))
     
     
     columns = ['sta1','sta2','lat1','lon1','lat2','lon2','dist','az',

@@ -121,9 +121,9 @@ in the range t_start to t_end will be stacked.',default=None,type=float)
 
 @click.option('--min_win',help='Minimum number of windows, if a stack contains less, it will\
 not be written to file.',default=1,type=int)
-
+@click.option('--save_stacks',help='Save each stack to a SAC file.',default=False,type=bool)
 def stack(input_dir,threshold_fix,threshold_var,threshold_cor,
-    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win,filt,plot):
+    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win,filt,plot,save_stacks):
     from scripts.ant_stacking import ant_stack
     
 
@@ -136,7 +136,7 @@ def stack(input_dir,threshold_fix,threshold_var,threshold_cor,
            filt = None
 
     ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
-    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win,filt,plot)
+    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win,filt,plot,save_stacks)
 
 
 
@@ -196,6 +196,8 @@ def ln_energy_ratio(bandpass,speed,hw,dir,window,plot,sep_noise,overlap):
     window_params['wtype']              =    window
     window_params['plot']               =    bool(plot)
     window_params['causal_side']        =    True
+
+
     
     measurement(mtype='ln_energy_ratio',dir=dir,filt=bandpass,
         g_speed=speed,window_params=window_params)
@@ -215,8 +217,9 @@ def ln_energy_ratio(bandpass,speed,hw,dir,window,plot,sep_noise,overlap):
 @click.option('--ray_step',help='discretizing step of ray in m',default=1e5)
 @click.option('--bin_size',help='Geographic bin size in degree',default=5.)
 @click.option('--min_snr',help='Minimum signal to noise ratio for meausurements',default=0.0)
-
-def sourcemap(f,speed,q,ray_step,bin_size,min_snr):
+@click.option('--csvfile',help='CSV file',default=None)
+@click.option('--starttime',help='Plot stacks from a specific start time.',default=None)
+def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime):
     
     """
     Plot measured log energy ratios on a map using ray-theoretical kernels.
@@ -224,9 +227,11 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr):
     Example: ants sourcemap --f 0.14 --speed 3000 --q 120
     """
 
+    if csvfile is None:
+        csvfile = 'data/ln_energy_ratio.measurement.csv'
 
-    if not os.path.exists('data/ln_energy_ratio.measurement.csv'):
-        msg = 'Source maps can currently only be created from file ln_energy_ratio.csv.\nRun ants measure ln_energy_ratio to obtain this file.'
+    if not os.path.exists(csvfile):
+        msg = 'CSV file not found.\nRun ants measure ln_energy_ratio to obtain this file.'
         raise NotImplementedError(msg)
 
 
@@ -244,7 +249,7 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr):
     min_snr = float(min_snr)
 
     from ants_2.scripts.ant_sourceimaging import sourcemap
-    s = sourcemap('data/ln_energy_ratio.measurement.csv',speed,f,q,ray_step,min_snr)
+    s = sourcemap(csvfile,speed,f,q,ray_step,min_snr,t0=starttime)
     s._temp_kernels()
     s._bin_kernels(bin_size,bin_size)
     s.plot_sourcemap()

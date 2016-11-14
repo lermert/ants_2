@@ -301,7 +301,7 @@ def plot_section(pathname,bandpass=None,comp='ZZ',fmt='SAC',centre=None,az_selec
 	maxlag = (traces[0].stats.npts-1) / 2.0 
 	
 	traces.plot(type='section',orientation='horizontal',
-		reftime = traces[0].stats.starttime + maxlag)
+		reftime = traces[0].stats.starttime + maxlag,scale=2)
 
 
 

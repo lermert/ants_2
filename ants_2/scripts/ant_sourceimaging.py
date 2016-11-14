@@ -3,13 +3,15 @@ import numpy as np
 from math import pi
 import pandas as pd
 import os
+from obspy import UTCDateTime
 from ants_2.tools.geo import get_midpoint, get_antipode, area_of_sqdeg
 from geographiclib import geodesic, geodesicline
 from ants_2.tools.plot import plot_grid
 
 class sourcemap(object):
 
-	def __init__(self,csvfile,v,f,q,seg_km,min_snr=0.):
+	def __init__(self,csvfile,v,f,q,seg_km,min_snr=0.,min_win=1,
+		t0=None):
 
 		self.v = v
 		self.f = f
@@ -17,8 +19,11 @@ class sourcemap(object):
 		self.w = 2 * pi * f
 		self.seg_km = seg_km
 		self.min_snr = min_snr
+		self.min_win = min_win
+		self.t0 = t0
 
 		self.data = pd.read_csv(csvfile)
+		print self.data.keys()
 
 
 	def plot_sourcemap(self):
@@ -108,9 +113,22 @@ class sourcemap(object):
 			lon1 = self.data.at[i,'lon1']
 			lat2 = self.data.at[i,'lat2']
 			lon2 = self.data.at[i,'lon2']
-			snr  = self.data.at[i,'snr']
+			snr_a  = self.data.at[i,'snr_a']
+			snr_c  = self.data.at[i,'snr_c']
+			n_win = self.data.at[i,'nstk']
+			starttime = self.data.at[i,'t0']
 
-			if snr < self.min_snr:
+			if snr_a < self.min_snr and snr_c < self.min_snr:
+				continue
+
+			if n_win < self.min_win:
+				continue
+
+			if (self.t0 is not None 
+			and UTCDateTime(self.t0) != UTCDateTime(starttime)):
+				continue
+
+			if self.data.at[i,'obs'] == np.nan:
 				continue
 
 			# determine antipode of midpoint
