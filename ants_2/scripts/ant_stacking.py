@@ -215,6 +215,8 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 		# find nr. of correlation windows
 		c_names = f['corr_windows'].keys()
 		n_corrwin = len(c_names)
+		if n_corrwin == 0:
+			continue
 		n_lag = len(f['corr_windows'][c_names[0]])
 		data = np.zeros(n_lag)
 		
@@ -664,8 +666,8 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			plt.tight_layout()
 			plt.show()
 
-
-	measurements.to_csv('measurements.csv',index=None)
+	filename = os.path.basename(input_dir)+'.measurements.csv'
+	measurements.to_csv(filename,index=None)
 
 			
 	with open(os.path.join(stack_dir,'stackinfo.txt'),'w') as fh:
