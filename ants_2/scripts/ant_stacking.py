@@ -465,6 +465,8 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			i0 = np.argmin(np.abs(t_windows-t))
 			#print t_step
 			i1 = np.argmin(np.abs(t_windows-(t+t_step)))
+			if t_windows[i1] > t_windows[i0] + t_step:
+				i1 -= 1
 			#print i0
 			#print i1
 			#print UTCDateTime(t_windows[i1])
@@ -678,8 +680,8 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 	print filename
 	measurements.to_csv(filename,index=None)
 
-			
-	with open(os.path.join(stack_dir,'stackinfo.txt'),'w') as fh:
+	f = os.path.splitext(filename)[0]	
+	with open(os.path.join(f+'.stackinfo.txt'),'w') as fh:
 		fh.write('threshold_fix: ')
 		fh.write(str(threshold_fix))
 		fh.write('\nthreshold_var: ')
