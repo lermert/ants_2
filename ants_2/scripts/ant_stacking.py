@@ -148,7 +148,7 @@ def get_median_values(rms,n_compare):
 # Tasks:
 def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
     n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,
-    t_step,min_win,filt,plot,save):
+    t_step,min_win,filt,plot,save,filename):
 
 	#indir,threshold1,threshold2,filt,n_compare,comb_freq,
 	#comb_thre,comb_trac,plot,plot_allwin,t_start,t_end,t_step,r_speed,vfac):
@@ -159,7 +159,8 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 		os.mkdir(stack_dir)	
 	
 	
-
+	if filename is None:
+		filename = os.path.join(input_dir,'measurement.csv')
 
 	
 	
@@ -171,7 +172,7 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 	
 	# window params for measurement
 	files = glob(os.path.join(input_dir,'*BHZ*BHZ*.h5'))
-	g = 2900.
+	g = 3300.
 	window_params = {}
 	window_params['hw'] = 60.
 	window_params['sep_noise']          =  1.
@@ -333,7 +334,6 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			weights = np.clip(weights,0.,1.)
 
 		
-
 ###############################################################################
 # APPLY THE FIRST STAGE OF WEIGHTS
 ###############################################################################
@@ -343,8 +343,6 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 
 
 		
-
-
 ###############################################################################
 # OBTAIN CORRELATION BASED WEIGHTS
 ###############################################################################
@@ -381,6 +379,7 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 
 		# combine weights and correlation weights
 		weights = np.multiply(weights,weights3)
+		correlations = np.multiply(correlations.T,weights).T
 		# msrs1 = np.array(msrs1)
 		# msrs2 = np.array(msrs2)
 
@@ -568,6 +567,7 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			msrs2[i] = energy(t_temp,g,window_params)
 			snr_a = snratio(t_temp,g,window_params)
 			
+			window_params['causal_side'] = True # this value should not be used during log_en_ratio but just to be sure
 			msrs3[i] = log_en_ratio(t_temp,g,window_params)
 
 			wins_all[i,:] = t_temp.data
@@ -651,22 +651,31 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			# ax1.plot(rmsc,np.arange(len(rmsc)),'x')
 			# ax1.set_xticks([])
 
-			ax2 = fig.add_subplot(gs[2],sharey=ax0)
+			ax2 = fig.add_subplot(gs[2],sharey=ax0,sharex=ax1)
 			
 			m1 = [np.nan if val == 0 else val for val in msrs1]
 			m2 = [np.nan if val == 0 else val for val in msrs2]
-			ax1.plot(m1,np.arange(len(m1))+0.5,'d')
-			ax2.plot(m2,np.arange(len(m2))+0.5,'rd')
+			ax1.plot(m2,np.arange(len(m1))+0.5,'d')
+			ax2.plot(m1,np.arange(len(m2))+0.5,'rd')
 			#ax1.set_xticks([0.5*np.max(msrs1),np.max(msrs1)])
-			ax1.set_yticks([])
+			plt.yticks(np.arange(len(m1))+0.5,[UTCDateTime(ts).strftime("%Y.%jT%H")
+			 for ts in tstarts])
 			#ax2.set_xticks([0.5*np.max(msrs2),np.max(msrs2)])
-			ax2.set_yticks([])
+			#ax2.set_yticks([])
+			#ax1.set_yticks([])
+
+			ax0.set_title(id1+'--'+id2)
+			ax1.set_title('sig.enr -')
+			ax2.set_title('sig.enr +')
 			
 		# show or save the plots. 
 			plt.tight_layout()
-			plt.show()
-
-	filename = os.path.basename(input_dir)+'.measurements.csv'
+			#plt.show()
+			pltname = os.path.splitext(inputfile)[0]+'.png'
+			plt.savefig(pltname)
+	print 'SAVING measurements:'
+	#filename = filen+'.measurements.csv'
+	print filename
 	measurements.to_csv(filename,index=None)
 
 			

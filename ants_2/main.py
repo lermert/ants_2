@@ -100,7 +100,8 @@ def correlation():
 @click.argument('threshold_fix')
 @click.argument('threshold_var')
 @click.argument('threshold_cor')
-
+@click.option('--outfile',help='Name for output csv file of measurement',
+    default=None)
 @click.option('--plot',is_flag=True,default=False)
 @click.option('--filt',help='bandpass filter fmin,fmax,corners',default=None)
 
@@ -123,7 +124,8 @@ in the range t_start to t_end will be stacked.',default=None,type=float)
 not be written to file.',default=1,type=int)
 @click.option('--save_stacks',help='Save each stack to a SAC file.',default=False,type=bool)
 def stack(input_dir,threshold_fix,threshold_var,threshold_cor,
-    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win,filt,plot,save_stacks):
+    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,
+    t_step,min_win,filt,plot,save_stacks,outfile):
     from scripts.ant_stacking import ant_stack
     
 
@@ -136,7 +138,8 @@ def stack(input_dir,threshold_fix,threshold_var,threshold_cor,
            filt = None
 
     ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
-    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step,min_win,filt,plot,save_stacks)
+    n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step
+    ,min_win,filt,plot,save_stacks,outfile)
 
 
 

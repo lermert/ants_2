@@ -37,7 +37,7 @@ class sourcemap(object):
 				cmap='seq',vmin=0,vmax=1.0)
 
 
-	def _bin_kernels(self,ddeg_lon,ddeg_lat,lonmin=90,lonmax=160,latmin=15,latmax=75):
+	def _bin_kernels(self,ddeg_lon,ddeg_lat,lonmin=110,lonmax=160,latmin=15,latmax=60):
 
 		print("Attention, Japan setting hardcoded...")
 
