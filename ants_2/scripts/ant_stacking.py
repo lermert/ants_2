@@ -148,7 +148,7 @@ def get_median_values(rms,n_compare):
 # Tasks:
 def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
     n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,
-    t_step,min_win,filt,plot,save,filename):
+    t_step,min_win,filt,plot,save,filename,cha_synth):
 
 	#indir,threshold1,threshold2,filt,n_compare,comb_freq,
 	#comb_thre,comb_trac,plot,plot_allwin,t_start,t_end,t_step,r_speed,vfac):
@@ -219,7 +219,11 @@ def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
 			ids_2 = "{}.{}..{}".format(id2.split('.')[0],id2.split('.')[1],
 				cha_synth)
 			synth_file = os.path.join(synth_dir,"{}--{}.sac".format(ids_1,ids_2))
-			tr_synth = read(synth_file)[0]
+			try:
+				tr_synth = read(synth_file)[0]
+				print tr_synth
+			except:
+				tr_synth = None
 		else:
 			tr_synth = None
 
@@ -358,7 +362,7 @@ def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
 # OBTAIN CORRELATION BASED WEIGHTS
 ###############################################################################
 		i = 0
-		for k in c_names:
+		for k in c_wins:
 
 			if np.max(np.abs(correlations[i,:])) == 0.:
 				continue
@@ -544,6 +548,33 @@ def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
 		# 		pass
 
 ###############################################################################
+# TAKE MEASUREMENTS ON SYNTHETICS
+###############################################################################
+		# if there is a synthetic file, get a measurement for that too
+		if tr_synth is not None:
+			tr_synth.stats.sac.dist = distance
+			if filt:
+				tr_synth.taper(0.05)
+				tr_synth.filter('bandpass',freqmin=filt[0],freqmax=filt[1],
+			corners=filt[2],zerophase=True)
+
+			# causal energy msr
+			window_params['causal_side'] = True
+			msrs_syn1 = energy(tr_synth,g,window_params)#log_en_ratio(t_temp,3300,window_params)
+		
+			# acausal energy msr
+			window_params['causal_side'] = False
+			msrs_syn2 = energy(tr_synth,g,window_params)
+			
+			window_params['causal_side'] = True # this value should not be used during log_en_ratio but just to be sure
+			msrs_syn3 = log_en_ratio(tr_synth,g,window_params)
+
+		else:
+			msrs_syn1 = np.nan
+			msrs_syn2 = np.nan
+			msrs_syn3 = np.nan
+
+###############################################################################
 # TAKE MEASUREMENTS ON THE INTERMEDIATE STACKS, PREPARE PLOT
 ###############################################################################
 
@@ -593,29 +624,7 @@ def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
 			stack.stats.sac.dist = distance
 			stack.data = stacks[i]
 
-		# if there is a synthetic file, get a measurement for that too
-		if tr_synth is not None:
-			tr_synth.stats.sac.dist = distance
-			if filt:
-				tr_synth.taper(0.05)
-				tr_synth.filter('bandpass',freqmin=filt[0],freqmax=filt[1],
-			corners=filt[2],zerophase=True)
-
-			# causal energy msr
-			window_params['causal_side'] = True
-			msrs_syn1 = energy(tr_synth,g,window_params)#log_en_ratio(t_temp,3300,window_params)
 		
-			# acausal energy msr
-			window_params['causal_side'] = False
-			msrs_syn2 = energy(tr_synth,g,window_params)
-			
-			window_params['causal_side'] = True # this value should not be used during log_en_ratio but just to be sure
-			msrs_syn3 = log_en_ratio(tr_synth,g,window_params)
-
-		else:
-			msrs_syn1 = np.nan
-			msrs_syn2 = np.nan
-			msrs_syn3 = np.nan
 ###############################################################################
 # Record the measurements for this station pair
 ###############################################################################	
@@ -627,9 +636,9 @@ def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
 			
 				measurements.loc[msr_cnt] = measurement + msrinf
 			
+				
+				print measurements.loc[msr_cnt]
 				msr_cnt += 1
-
-
 
 			if save:
 				# save the stack.

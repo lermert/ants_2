@@ -124,10 +124,11 @@ in the range t_start to t_end will be stacked.',default=None,type=float)
 
 @click.option('--min_win',help='Minimum number of windows, if a stack contains less, it will\
 not be written to file.',default=1,type=int)
+@click.option('--cha_synth',help='Synthetic channel name',default='MXZ')
 @click.option('--save_stacks',help='Save each stack to a SAC file.',default=False,type=bool)
 def stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
     n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,
-    t_step,min_win,filt,plot,save_stacks,outfile):
+    t_step,min_win,filt,plot,save_stacks,outfile,cha_synth):
     from scripts.ant_stacking import ant_stack
     
 
@@ -141,7 +142,7 @@ def stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
 
     ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
     n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step
-    ,min_win,filt,plot,save_stacks,outfile)
+    ,min_win,filt,plot,save_stacks,outfile,cha_synth)
 
 
 
@@ -224,8 +225,13 @@ def ln_energy_ratio(bandpass,speed,hw,dir,window,plot,sep_noise,overlap):
 @click.option('--min_snr',help='Minimum signal to noise ratio for meausurements',default=0.0)
 @click.option('--csvfile',help='CSV file',default=None)
 @click.option('--prefix',help='Prefix for output file', default=None)
+@click.option('--kernel_dir',help='If precomputed kernels are available, specify the directory.',
+    default=None)
+@click.option('--msr', help='Measurement: obs, enr_a, enr_c',default='obs')
+@click.option('--cha',help='synthetics channel, e.g. MXZ, MXE...',default='MXZ')
 @click.option('--starttime',help='Plot stacks from a specific start time.',default=None)
-def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix):
+def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix,
+    msr,cha,kernel_dir):
     
     """
     Plot measured log energy ratios on a map using ray-theoretical kernels.
@@ -241,25 +247,40 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix):
         raise NotImplementedError(msg)
 
 
-    try:
-        
-        speed = float(speed)
-        f = float(f)
-        q = float(q)
-    except:
-        msg = 'For this measurement, options f, speed and q must be specified.'
-        raise ValueError(msg)
     
-    bin_size = float(bin_size)
-    ray_step = float(ray_step) / 1000.
-    min_snr = float(min_snr)
 
-    from ants_2.scripts.ant_sourceimaging import sourcemap
-    s = sourcemap(csvfile,speed,f,q,ray_step,min_snr,t0=starttime,
-        prefix=prefix)
-    s._temp_kernels()
-    s._bin_kernels(bin_size,bin_size)
-    s.plot_sourcemap()
+
+    if speed is not None:
+
+        from ants_2.scripts.ant_sourceimaging import sourcemap
+        try:
+            speed = float(speed)
+            f = float(f)
+            q = float(q)
+        except:
+            msg = 'For this measurement, options f, speed and q must be specified.'
+            raise ValueError(msg)
+        
+        bin_size = float(bin_size)
+        ray_step = float(ray_step) / 1000.
+        min_snr = float(min_snr)
+        s = sourcemap(csvfile,speed,f,q,ray_step,min_snr,t0=starttime,
+            prefix=prefix)
+        s._temp_kernels()
+        s._bin_kernels(bin_size,bin_size)
+        s.plot_sourcemap()
+    else:
+        from ants_2.scripts.ant_sourceimaging import sourcemap_2
+        if msr == 'obs':
+            syn = 'syn'
+        elif msr == 'enr_c':
+            syn == 'syn_c'
+        elif msr == 'enr_a':
+            syn == 'syn_a'
+
+        s = sourcemap_2(csvfile,kernel_dir,min_snr=min_snr,
+        t0=starttime,prefix=prefix,msr=msr,syn=syn,cha=cha)
+        s.assemble_descent()
 
 
 

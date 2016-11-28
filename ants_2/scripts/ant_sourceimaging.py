@@ -1,12 +1,134 @@
 # determine kernel values for ray-theoretical kernels, bin measurements, save the maps, and plot them
 import numpy as np
-from math import pi
+from math import pi, isnan
 import pandas as pd
 import os
 from obspy import UTCDateTime
 from ants_2.tools.geo import get_midpoint, get_antipode, area_of_sqdeg
 from geographiclib import geodesic, geodesicline
 from ants_2.tools.plot import plot_grid
+from glob import glob
+
+class sourcemap_2(object):
+
+	def __init__(self,csv_file,kernel_dir,min_snr=0.,
+		t0=None,prefix=None,msr='obs',syn='syn',cha='MXZ'):
+
+		self.data = pd.read_csv(csv_file)
+		self.kernel_dir = kernel_dir
+		self.min_snr = min_snr
+		
+		self.t0 = t0
+		self.prefix = prefix if prefix is not None else './'
+		self.msr = msr
+		self.syn = syn
+		self.cha = cha
+
+	def assemble_descent(self):
+		# loop over stationpairs
+		cnt_success = 0
+		cnt_lowsnr = 0
+		cnt_lown = 0
+		cnt_overlap = 0
+		cnt_unavail = 0
+
+		if self.t0 is not None:
+			self.data = self.data[data.t0 == self.t0]
+		n = len(self.data)
+
+
+		for i in range(n):
+			print i
+			if self.data.at[i,'snr_c'] < self.min_snr\
+			 and self.data.at[i,'snr_a'] < self.min_snr:
+				cnt_lowsnr += 1
+				continue
+			# ToDo: deal with station pairs with several measurements (with different instruments)
+			# (At the moment, just all added. Probably fine on this large scale)
+			# find kernel file
+			sta1 = self.data.at[i,'sta1']
+			sta2 = self.data.at[i,'sta2']
+			print sta1,sta2
+			if sta1.split('.')[-1][-1] in ['E','N','T','R']:
+				msg = "Cannot yet handle horizontal components"
+				raise NotImplementedError(msg)
+			if sta2.split('.')[-1][-1] in ['E','N','T','R']:
+				msg = "Cannot yet handle horizontal components"
+				raise NotImplementedError(msg)
+		
+		
+			# ToDo !!! Replace this by a decent formulation, where the channel is properly set !!! No error for E, R, T, N
+			sta1 = "*.{}..{}".format(sta1.split('.')[1],self.cha) # ignoring network: IRIS has sometimes several network codes at same station
+			sta2 = "*.{}..{}".format(sta2.split('.')[1],self.cha) # ignoring network: IRIS has sometimes several network codes at same station
+		
+			kernelfile1 = os.path.join(self.kernel_dir,"{}--{}.npy".\
+				format(sta1,sta2))
+			kernelfile2 = os.path.join(self.kernel_dir,"{}--{}.npy".\
+				format(sta2,sta1))
+			# Same problem with different network codes.
+			# Due to station pairs being in alphabetic order of network.station.loc.cha, different network
+			# codes also lead to different ordering.
+			try:
+				kernelfile = glob(kernelfile1)[0]
+			except IndexError:
+				try: 
+					kernelfile = glob(kernelfile2)[0]
+				except IndexError:
+					kernelfile = kernelfile1 # this file does not actually exist, but there might be a good reason.
+					# Check that first, and then complain.
+			print kernelfile
+			# Skip if entry is nan: This is most likely due to no measurement taken because station distance too short	
+			if isnan(self.data.at[i,self.msr]):
+				print("No measurement in dataset for:")
+				print(sta1)
+				print(sta2)
+				cnt_overlap += 1
+				continue
+
+			# ...unless somehow the kernel went missing (undesirable case!)
+
+			if not os.path.exists(kernelfile):
+				print("File does not exist:")
+				print(os.path.basename(kernelfile))
+				cnt_unavail += 1
+				continue
+
+
+			# load kernel
+			kernel = np.load(kernelfile)
+			# ToDo Ugly!
+			if 'gradient' not in locals():
+				gradient = np.zeros(kernel.shape)
+			if True in np.isnan(kernel):
+				print("kernel contains nan, skipping")
+				print(os.path.basename(kernelfile))
+				continue
+
+
+			# if everythin worked: 
+			
+
+			# Find synthetic measurem, multiply kernel and measurement, add to descent dir. 
+			
+			if self.msr == 'obs':
+				kernel *= (self.data.at[i,'syn'] - self.data.at[i,self.msr])
+			elif msr == 'enr_a':
+				kernel *= 2. * (self.data.at[i,'syn_a'] - self.data.at[i,self.msr])
+			elif msr == 'enr_c':
+				kernel *= 2. * (self.data.at[i,'syn_c'] - self.data.at[i,self.msr])
+			cnt_success += 1 # yuhu
+
+			gradient += kernel
+			
+			del kernel
+
+
+		# Save the positive kernel
+		kernelfile = self.prefix+'grad_all.npy'
+		np.save(kernelfile,gradient)
+
+
+
 
 class sourcemap(object):
 

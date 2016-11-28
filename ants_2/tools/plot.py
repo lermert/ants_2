@@ -1,5 +1,4 @@
 import matplotlib
-matplotlib.use('Qt4Agg')
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from matplotlib import mlab
