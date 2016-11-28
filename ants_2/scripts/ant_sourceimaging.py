@@ -11,7 +11,7 @@ from ants_2.tools.plot import plot_grid
 class sourcemap(object):
 
 	def __init__(self,csvfile,v,f,q,seg_km,min_snr=0.,min_win=1,
-		t0=None):
+		t0=None,prefix=None):
 
 		self.v = v
 		self.f = f
@@ -21,20 +21,21 @@ class sourcemap(object):
 		self.min_snr = min_snr
 		self.min_win = min_win
 		self.t0 = t0
-
+		self.prefix = prefix if prefix is not None else './'
 		self.data = pd.read_csv(csvfile)
 		print self.data.keys()
 
 
 	def plot_sourcemap(self):
 
-		if os.path.exists('sourcemap.npy'):
+		if os.path.exists(self.prefix+'.sourcemap.npy'):
 
-			smap = np.load('sourcemap.npy')
+			smap = np.load(self.prefix+'.sourcemap.npy')
 
-			plot_grid(smap[0],smap[1],smap[2],outfile='sourcemap.png')
-			plot_grid(smap[0],smap[1],smap[3],outfile='raycntmap.png',
-				cmap='seq',vmin=0,vmax=1.0)
+			plot_grid(smap[0],smap[1],smap[2],outfile=self.prefix+'.sourcemap.png',
+				normalize=False)
+			plot_grid(smap[0],smap[1],smap[3],outfile=self.prefix+'.raycntmap.png',
+				cmap='seq',vmin=0,vmax=1.0,normalize=True)
 
 
 	def _bin_kernels(self,ddeg_lon,ddeg_lat,lonmin=110,lonmax=160,latmin=15,latmax=60):
@@ -95,7 +96,8 @@ class sourcemap(object):
 				h.append(hits[i,j])
 
 		smap = np.array(zip(x,y,z,h)).transpose()
-		np.save('sourcemap.npy',smap)
+
+		np.save(self.prefix+'.sourcemap.npy',smap)
 		os.system('rm tempfile.txt')
 		
 

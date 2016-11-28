@@ -100,6 +100,8 @@ def correlation():
 @click.argument('threshold_fix')
 @click.argument('threshold_var')
 @click.argument('threshold_cor')
+@click.option('--synth_dir',help='Take measurements on synthetics in this directory.',
+    default=None)
 @click.option('--outfile',help='Name for output csv file of measurement',
     default=None)
 @click.option('--plot',is_flag=True,default=False)
@@ -123,7 +125,7 @@ in the range t_start to t_end will be stacked.',default=None,type=float)
 @click.option('--min_win',help='Minimum number of windows, if a stack contains less, it will\
 not be written to file.',default=1,type=int)
 @click.option('--save_stacks',help='Save each stack to a SAC file.',default=False,type=bool)
-def stack(input_dir,threshold_fix,threshold_var,threshold_cor,
+def stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
     n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,
     t_step,min_win,filt,plot,save_stacks,outfile):
     from scripts.ant_stacking import ant_stack
@@ -137,7 +139,7 @@ def stack(input_dir,threshold_fix,threshold_var,threshold_cor,
            print('Bandpass format must be: freqmin,freqmax,order. Not filtering.')
            filt = None
 
-    ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
+    ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
     n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,t_step
     ,min_win,filt,plot,save_stacks,outfile)
 
@@ -221,8 +223,9 @@ def ln_energy_ratio(bandpass,speed,hw,dir,window,plot,sep_noise,overlap):
 @click.option('--bin_size',help='Geographic bin size in degree',default=5.)
 @click.option('--min_snr',help='Minimum signal to noise ratio for meausurements',default=0.0)
 @click.option('--csvfile',help='CSV file',default=None)
+@click.option('--prefix',help='Prefix for output file', default=None)
 @click.option('--starttime',help='Plot stacks from a specific start time.',default=None)
-def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime):
+def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix):
     
     """
     Plot measured log energy ratios on a map using ray-theoretical kernels.
@@ -252,7 +255,8 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime):
     min_snr = float(min_snr)
 
     from ants_2.scripts.ant_sourceimaging import sourcemap
-    s = sourcemap(csvfile,speed,f,q,ray_step,min_snr,t0=starttime)
+    s = sourcemap(csvfile,speed,f,q,ray_step,min_snr,t0=starttime,
+        prefix=prefix)
     s._temp_kernels()
     s._bin_kernels(bin_size,bin_size)
     s.plot_sourcemap()

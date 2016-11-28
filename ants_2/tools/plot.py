@@ -246,7 +246,8 @@ def plot_correlation(f, bandpass=None):
 
 
 
-def plot_section(pathname,bandpass=None,comp='ZZ',fmt='SAC',centre=None,az_selection=None):
+def plot_section(pathname,bandpass=None,comp='ZZ',fmt='SAC',
+	centre=None,az_selection=None,scale=4.):
 
 	# TOdo components properly!
 	inpt = glob(os.path.join(pathname,'*{}--*{}.*.{}'.format(comp[0],comp[1],fmt.lower())))
@@ -301,7 +302,7 @@ def plot_section(pathname,bandpass=None,comp='ZZ',fmt='SAC',centre=None,az_selec
 	maxlag = (traces[0].stats.npts-1) / 2.0 
 	
 	traces.plot(type='section',orientation='horizontal',
-		reftime = traces[0].stats.starttime + maxlag,scale=2)
+		reftime = traces[0].stats.starttime + maxlag,scale=scale)
 
 
 
@@ -328,7 +329,8 @@ def plot_window(correlation, window, measurement,win_noise=None):
 
 
 def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
-	vmax=1.2,outfile=None,title=None,shade='flat',cmap='div'):
+	vmax=1.2,outfile=None,title=None,shade='flat',
+	cmap='div',normalize=True):
 
 
 	if cmap == 'seq':
@@ -352,9 +354,12 @@ def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
 	if title is not None:
 		plt.title(title)
 
-	plt.tripcolor(triangles, map_z/np.max(np.abs(map_z)),
+	if normalize:
+		plt.tripcolor(triangles, map_z/np.max(np.abs(map_z)),
 		shading=shade, vmin=vmin,vmax=vmax, cmap=cmap)
-
+	else:
+		plt.tripcolor(triangles, map_z,
+		shading=shade, vmin=vmin,vmax=vmax, cmap=cmap)
 
 	m.colorbar(location='bottom',pad=0.4)
 	m.drawcoastlines(linewidth=0.5)

@@ -146,7 +146,7 @@ def get_median_values(rms,n_compare):
 	return meds
 
 # Tasks:
-def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
+def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
     n_compare,comb_freq,comb_thre,comb_trac,t_start,t_end,
     t_step,min_win,filt,plot,save,filename):
 
@@ -174,7 +174,7 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 	files = glob(os.path.join(input_dir,'*BHZ*BHZ*.h5'))
 	g = 3300.
 	window_params = {}
-	window_params['hw'] = 60.
+	window_params['hw'] = 40.
 	window_params['sep_noise']          =  1.
 	window_params['win_overlap']        =  False 
 	window_params['wtype']              =  'hann'
@@ -184,7 +184,7 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 
 	# Save the measurements
 	columns = ['sta1','sta2','lat1','lon1','lat2','lon2','dist','az',
-    'baz','t0','nstk','snr_c','snr_a','enr_c','enr_a','obs']
+    'baz','t0','nstk','snr_c','snr_a','enr_c','enr_a','obs','syn_c','syn_a','syn']
 	measurements = pd.DataFrame(columns=columns)
 	msr_cnt = 0
 
@@ -212,13 +212,24 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 		measurement.append(id2)
 		measurement.extend(geoinf)
 
-		
+		# try to find synthetic file
+		if synth_dir is not None:
+			ids_1 = "{}.{}..{}".format(id1.split('.')[0],id1.split('.')[1],
+				cha_synth)
+			ids_2 = "{}.{}..{}".format(id2.split('.')[0],id2.split('.')[1],
+				cha_synth)
+			synth_file = os.path.join(synth_dir,"{}--{}.sac".format(ids_1,ids_2))
+			tr_synth = read(synth_file)[0]
+		else:
+			tr_synth = None
+
+
 		# find nr. of correlation windows
-		c_names = f['corr_windows'].keys()
-		n_corrwin = len(c_names)
+		c_wins = f['corr_windows'].keys()
+		n_corrwin = len(c_wins)
 		if n_corrwin == 0:
 			continue
-		n_lag = len(f['corr_windows'][c_names[0]])
+		n_lag = len(f['corr_windows'][c_wins[0]])
 		data = np.zeros(n_lag)
 		
 		# read out rms values (use clipped rms values? Maybe not worth the complication)
@@ -240,7 +251,7 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 # READ IN DATA and trace rms; determine correlation rms and measurement; and start times
 ###############################################################################
 
-		for k in c_names:
+		for k in c_wins:
 
 			correlations[i,:] = f['corr_windows'][k][:]
 			rms1[i,:] = f['corr_windows'][k].attrs['rms1']
@@ -581,6 +592,30 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			stack.stats.sac = {}
 			stack.stats.sac.dist = distance
 			stack.data = stacks[i]
+
+		# if there is a synthetic file, get a measurement for that too
+		if tr_synth is not None:
+			tr_synth.stats.sac.dist = distance
+			if filt:
+				tr_synth.taper(0.05)
+				tr_synth.filter('bandpass',freqmin=filt[0],freqmax=filt[1],
+			corners=filt[2],zerophase=True)
+
+			# causal energy msr
+			window_params['causal_side'] = True
+			msrs_syn1 = energy(tr_synth,g,window_params)#log_en_ratio(t_temp,3300,window_params)
+		
+			# acausal energy msr
+			window_params['causal_side'] = False
+			msrs_syn2 = energy(tr_synth,g,window_params)
+			
+			window_params['causal_side'] = True # this value should not be used during log_en_ratio but just to be sure
+			msrs_syn3 = log_en_ratio(tr_synth,g,window_params)
+
+		else:
+			msrs_syn1 = np.nan
+			msrs_syn2 = np.nan
+			msrs_syn3 = np.nan
 ###############################################################################
 # Record the measurements for this station pair
 ###############################################################################	
@@ -588,7 +623,7 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			if not np.nan in [msrs1[i],msrs2[i],msrs3[i],snr_a,snr_c]:
 				msrinf = [str(UTCDateTime(tstarts[i])),
 					  cnts_good[i],snr_c,snr_a,msrs1[i],msrs2[i],
-					  msrs3[i]]
+					  msrs3[i],msrs_syn1,msrs_syn2,msrs_syn3]
 			
 				measurements.loc[msr_cnt] = measurement + msrinf
 			
@@ -660,8 +695,8 @@ def ant_stack(input_dir,threshold_fix,threshold_var,threshold_cor,
 			ax1.plot(m2,np.arange(len(m1))+0.5,'d')
 			ax2.plot(m1,np.arange(len(m2))+0.5,'rd')
 			#ax1.set_xticks([0.5*np.max(msrs1),np.max(msrs1)])
-			plt.yticks(np.arange(len(m1))+0.5,[UTCDateTime(ts).strftime("%Y.%jT%H")
-			 for ts in tstarts])
+			plt.yticks(np.arange(0,len(m1),12)+0.5,[UTCDateTime(ts).strftime("%Y.%jT%H")
+			 for ts in tstarts][0::12])
 			#ax2.set_xticks([0.5*np.max(msrs2),np.max(msrs2)])
 			#ax2.set_yticks([])
 			#ax1.set_yticks([])
