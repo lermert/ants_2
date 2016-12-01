@@ -227,11 +227,12 @@ def ln_energy_ratio(bandpass,speed,hw,dir,window,plot,sep_noise,overlap):
 @click.option('--prefix',help='Prefix for output file', default=None)
 @click.option('--kernel_dir',help='If precomputed kernels are available, specify the directory.',
     default=None)
+@click.option('--max_dist',help='Only include station pairs below this distance',default=None)
 @click.option('--msr', help='Measurement: obs, enr_a, enr_c',default='obs')
 @click.option('--cha',help='synthetics channel, e.g. MXZ, MXE...',default='MXZ')
 @click.option('--starttime',help='Plot stacks from a specific start time.',default=None)
 def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix,
-    msr,cha,kernel_dir):
+    msr,cha,kernel_dir,max_dist):
     
     """
     Plot measured log energy ratios on a map using ray-theoretical kernels.
@@ -279,7 +280,7 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix,
             syn == 'syn_a'
 
         s = sourcemap_2(csvfile,kernel_dir,min_snr=min_snr,
-        t0=starttime,prefix=prefix,msr=msr,syn=syn,cha=cha)
+        t0=starttime,prefix=prefix,msr=msr,syn=syn,cha=cha,max_dist=max_dist)
         s.assemble_descent()
 
 

@@ -12,7 +12,8 @@ from glob import glob
 class sourcemap_2(object):
 
 	def __init__(self,csv_file,kernel_dir,min_snr=0.,
-		t0=None,prefix=None,msr='obs',syn='syn',cha='MXZ'):
+		t0=None,prefix=None,msr='obs',syn='syn',
+		cha='MXZ',max_dist=None):
 
 		self.data = pd.read_csv(csv_file)
 		self.kernel_dir = kernel_dir
@@ -23,8 +24,11 @@ class sourcemap_2(object):
 		self.msr = msr
 		self.syn = syn
 		self.cha = cha
+		self.max_dist = max_dist
 
 	def assemble_descent(self):
+		#ToDo some metadata
+		# outinfo = open(self.prefix+'image_info.txt')
 		# loop over stationpairs
 		cnt_success = 0
 		cnt_lowsnr = 0
@@ -33,8 +37,13 @@ class sourcemap_2(object):
 		cnt_unavail = 0
 
 		if self.t0 is not None:
-			self.data = self.data[data.t0 == self.t0]
+			self.data = self.data[self.data.t0 == self.t0]
+
+		if self.max_dist is not None:
+			self.data = self.data[self.data.dist <= max_dist]
+
 		n = len(self.data)
+
 
 
 		for i in range(n):
