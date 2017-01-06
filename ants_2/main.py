@@ -270,6 +270,7 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix,
         s._temp_kernels()
         s._bin_kernels(bin_size,bin_size)
         s.plot_sourcemap()
+
     else:
         from ants_2.scripts.ant_sourceimaging import sourcemap_2
         if msr == 'obs':
@@ -281,7 +282,7 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix,
 
         s = sourcemap_2(csvfile,kernel_dir,min_snr=min_snr,
         t0=starttime,prefix=prefix,msr=msr,syn=syn,cha=cha,max_dist=max_dist)
-        s.assemble_descent()
+        s.assemble_gradient()
 
 
 
