@@ -26,7 +26,7 @@ class sourcemap_2(object):
 		self.cha = cha
 		self.max_dist = max_dist
 
-	def assemble_descent(self):
+	def assemble_gradient(self):
 		#ToDo some metadata
 		# outinfo = open(self.prefix+'image_info.txt')
 		# loop over stationpairs
@@ -116,14 +116,14 @@ class sourcemap_2(object):
 			# if everythin worked: 
 			
 
-			# Find synthetic measurem, multiply kernel and measurement, add to descent dir. 
+			# Find synthetic measurem, multiply kernel and measurement, add to gradient. 
 			
 			if self.msr == 'obs':
 				kernel *= (self.data.at[i,'syn'] - self.data.at[i,self.msr])
 			elif msr == 'enr_a':
-				kernel *= 2. * (self.data.at[i,'syn_a'] - self.data.at[i,self.msr])
+				kernel *=  (self.data.at[i,'syn_a'] - self.data.at[i,self.msr])
 			elif msr == 'enr_c':
-				kernel *= 2. * (self.data.at[i,'syn_c'] - self.data.at[i,self.msr])
+				kernel *=  (self.data.at[i,'syn_c'] - self.data.at[i,self.msr])
 			cnt_success += 1 # yuhu
 
 			gradient += kernel
