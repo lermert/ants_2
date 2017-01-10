@@ -275,9 +275,9 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix,
         if msr == 'obs':
             syn = 'syn'
         elif msr == 'enr_c':
-            syn == 'syn_c'
+            syn = 'syn_c'
         elif msr == 'enr_a':
-            syn == 'syn_a'
+            syn = 'syn_a'
 
         s = sourcemap_2(csvfile,kernel_dir,min_snr=min_snr,
         t0=starttime,prefix=prefix,msr=msr,syn=syn,cha=cha,max_dist=max_dist)

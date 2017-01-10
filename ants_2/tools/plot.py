@@ -364,8 +364,8 @@ def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
 	m.drawcoastlines(linewidth=0.5)
 	#m.drawparallels(np.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
 	#m.drawmeridians(np.arange(-180,210,60.),labels=[0,0,0,1]) # draw meridians
-	d_lon = abs(map_x.max()-map_x.min()) / 5.
-	d_lat = abs(map_y.max()-map_y.min()) / 5.
+	d_lon = abs(map_x.max()-map_x.min()) / 6.
+	d_lat = abs(map_y.max()-map_y.min()) / 6.
 
 	m.drawparallels(np.arange(np.min(map_y),np.max(map_y),d_lat)\
 	,labels=[1,0,0,0]) # draw parallels

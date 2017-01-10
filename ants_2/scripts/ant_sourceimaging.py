@@ -40,13 +40,12 @@ class sourcemap_2(object):
 			self.data = self.data[self.data.t0 == self.t0]
 
 		if self.max_dist is not None:
-			self.data = self.data[self.data.dist <= max_dist]
+			self.data = self.data[self.data.dist <= self.max_dist]
 
-		n = len(self.data)
+		
 
 
-
-		for i in range(n):
+		for i in self.data.index:
 			print i
 			if self.data.at[i,'snr_c'] < self.min_snr\
 			 and self.data.at[i,'snr_a'] < self.min_snr:
@@ -133,7 +132,7 @@ class sourcemap_2(object):
 
 
 		# Save the positive kernel
-		kernelfile = self.prefix+'grad_all.npy'
+		kernelfile = self.prefix+('.grad_%g_obs.npy' %cnt_success)
 		np.save(kernelfile,gradient)
 
 
@@ -169,9 +168,10 @@ class sourcemap(object):
 				cmap='seq',vmin=0,vmax=1.0,normalize=True)
 
 
-	def _bin_kernels(self,ddeg_lon,ddeg_lat,lonmin=110,lonmax=160,latmin=15,latmax=60):
+	def _bin_kernels(self,ddeg_lon,ddeg_lat,lonmin=-180,lonmax=180,latmin=-90,latmax=90):
+		#lonmin=110,lonmax=160,latmin=15,latmax=60):
 
-		print("Attention, Japan setting hardcoded...")
+		#print("Attention, Japan setting hardcoded...")
 
 		lats = np.arange(latmin,latmax+ddeg_lat,ddeg_lat)
 		lons = np.arange(lonmin,lonmax+ddeg_lon,ddeg_lon)
@@ -227,7 +227,7 @@ class sourcemap(object):
 				h.append(hits[i,j])
 
 		smap = np.array(zip(x,y,z,h)).transpose()
-
+		
 		np.save(self.prefix+'.sourcemap.npy',smap)
 		os.system('rm tempfile.txt')
 		
