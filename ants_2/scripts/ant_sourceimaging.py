@@ -148,7 +148,11 @@ class sourcemap(object):
 				
 			
 			# Multiply by measurement
-			kernel[:,2] *= self.data.at[i,'obs'] * -1.
+			kernel[:,2] *= self.data.at[i,'obs'] * -1. * -1. #The first -1 is because 
+			# the definition of the kernel is (A-A_obs) * K_dataless, and here A=0, so we
+			# need just -A_obs.
+			# The second -1 is because we want to look at the negative of the misfit gradient
+			# (we want to decrease misfit by our update; so that is the update direction)
 	
 			# append ray coordinates and kernel to the temporary file
 			for k in range(2*num_seg):
