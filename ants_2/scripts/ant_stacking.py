@@ -684,9 +684,13 @@ def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
 			im = ax0.pcolormesh(xv,yv,wins_all,
 				cmap=plt.cm.RdGy,vmin=-v,vmax=v)
 			ax0.plot(np.ones(len(stacks)+1)*(distance/g)-window_params['hw'],
-				np.arange(0,len(stacks)+1))
+				np.arange(0,len(stacks)+1),'--k')
 			ax0.plot(np.ones(len(stacks)+1)*(distance/g)+window_params['hw'],
-				np.arange(0,len(stacks)+1))
+				np.arange(0,len(stacks)+1),'--k')
+			ax0.plot(np.ones(len(stacks)+1)*(-distance/g)-window_params['hw'],
+				np.arange(0,len(stacks)+1),'--k')
+			ax0.plot(np.ones(len(stacks)+1)*(-distance/g)+window_params['hw'],
+				np.arange(0,len(stacks)+1),'--k')
 			#ax0.axis('tight')
 			#plt.colorbar(im,position='left')
 			
@@ -713,6 +717,9 @@ def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
 			ax0.set_title(id1+'--'+id2)
 			ax1.set_title('sig.enr -')
 			ax2.set_title('sig.enr +')
+			ax0.set_xlabel('Lag time (s)')
+			ax1.set_xlabel('(m^2/s)      ')
+			ax2.set_xlabel('(m^2/s)      ')
 			
 		# show or save the plots. 
 			plt.tight_layout()

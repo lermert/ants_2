@@ -347,7 +347,10 @@ def correlation(input_file,bandpass):
     default=None,type=str)
 @click.option('--baz',help='min_azimuth,max_azimuth: Plot only those correlation traces that fall into the specified azimuth range.',
     default=None,type=str)
-def section(directory,bandpass,component,centre,baz):
+@click.option('--scale',help='Scale correlations by a constant factor',default=1.0)
+@click.option('--resol',help='Plot only every nth trace for visibility',default=1.0)
+
+def section(directory,bandpass,component,centre,baz,scale,resol):
     if bandpass is not None:
        try:
            bandpass = [float(nr) for nr in bandpass.split(',')]
@@ -375,7 +378,7 @@ def section(directory,bandpass,component,centre,baz):
 
 
     from tools.plot import plot_section
-    plot_section(directory,bandpass=bandpass,comp=component,centre=centre,az_selection=baz)
+    plot_section(directory,bandpass=bandpass,comp=component,centre=centre,az_selection=baz,scale=scale,resol=resol)
 
 
 

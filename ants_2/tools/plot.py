@@ -246,14 +246,17 @@ def plot_correlation(f, bandpass=None):
 
 
 def plot_section(pathname,bandpass=None,comp='ZZ',fmt='SAC',
-	centre=None,az_selection=None,scale=4.):
+	centre=None,az_selection=None,scale=4.,resol=1):
 
 	# TOdo components properly!
-	inpt = glob(os.path.join(pathname,'*{}--*{}.*.{}'.format(comp[0],comp[1],fmt.lower())))
-	inpt.extend(glob(os.path.join(pathname,'*{}--*{}.*.{}'.format(comp[0],comp[1],fmt.upper()))))
+	inpt = glob(os.path.join(pathname,'*{}--*{}*.{}'.format(comp[0],comp[1],fmt.lower())))
+	inpt.extend(glob(os.path.join(pathname,'*{}--*{}*.{}'.format(comp[0],comp[1],fmt.upper()))))
+
+	# print os.path.join(pathname,'*{}--*{}.*.{}'.format(comp[0],comp[1],fmt.lower()))
 
 	traces = Stream()
 	for path in inpt:
+
 		try:
 			traces += read(path)[0]
 		except:
