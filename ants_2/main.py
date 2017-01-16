@@ -167,7 +167,8 @@ def ln_energy_ratio(bandpass,speed,hw,window,plot,sep_noise,overlap):
 @click.option('--ray_step',help='discretizing step of ray in m',default=1e5)
 @click.option('--bin_size',help='Geographic bin size in degree',default=5.)
 @click.option('--min_snr',help='Minimum signal to noise ratio for meausurements',default=0.0)
-def sourcemap(f,speed,q,ray_step,bin_size,min_snr):
+@click.option('--box',help='Geographic limits for map: latmin,latmax,lonmin,lonmax in degree',default=None)
+def sourcemap(f,speed,q,ray_step,bin_size,min_snr,box):
     
     """
     Plot measured log energy ratios on a map using ray-theoretical kernels.
@@ -194,10 +195,29 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr):
     ray_step = float(ray_step) / 1000.
     min_snr = float(min_snr)
 
+    if isinstance(box,unicode):
+        try:
+            box = [float(l) for l in box.split(',')]
+            print("Geographic limits: {} {} {} {}".format(*box))
+        except:
+           print('Geographic limits format: latmin,latmax,lonmin,lonmax.\
+        lat must be in (-90,90) and lon in (-180,180)')
+           box = [-90.,89.,-180,179]
+
+   
+    latmin = box[0]
+    latmax = box[1]
+    lonmin = box[2]
+    lonmax = box[3]
+
+    if lonmin > lonmax:
+        raise ValueError('Geographic limits format: latmin,latmax,lonmin,lonmax.\
+        lat must be in (-90,90) and lon in (-180,180)')
+
     from ants_2.scripts.ant_sourceimaging import sourcemap
     s = sourcemap('data/ln_energy_ratio.measurement.csv',speed,f,q,ray_step,min_snr)
     s._temp_kernels()
-    s._bin_kernels(bin_size,bin_size)
+    s._bin_kernels(bin_size,bin_size,lonmin,lonmax,latmin,latmax)
     s.plot_sourcemap()
 
 

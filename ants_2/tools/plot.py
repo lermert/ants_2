@@ -300,6 +300,12 @@ def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
 	vmax=1.2,outfile=None,title=None,shade='flat',cmap='div'):
 
 
+	
+	lonmin = np.min(map_x)
+	lonmax = np.max(map_x)
+	latmax = np.max(map_y)
+	latmin = np.min(map_y)
+
 	if cmap == 'seq':
 		cmap = plt.cm.BuGn
 
@@ -307,8 +313,8 @@ def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
 		cmap = plt.cm.bwr
 
 	m = Basemap(rsphere=6378137,resolution='c',projection='cyl',
-	llcrnrlat=np.min(map_y),urcrnrlat=np.max(map_y),
-	llcrnrlon=np.min(map_x),urcrnrlon=np.max(map_x))
+	llcrnrlat=latmin,urcrnrlat=latmax,
+	llcrnrlon=lonmin,urcrnrlon=lonmax)
 
 	
 	triangles = tri.Triangulation(map_x,map_y)
@@ -326,9 +332,14 @@ def plot_grid(map_x,map_y,map_z,stations=[],vmin=-1.2,
 
 
 	m.colorbar(location='bottom',pad=0.4)
-	m.drawcoastlines(linewidth=0.5)
-	m.drawparallels(np.arange(-90.,120.,30.),labels=[1,0,0,0]) # draw parallels
-	m.drawmeridians(np.arange(-180,210,60.),labels=[0,0,0,1]) # draw meridians
+	m.drawcoastlines(linewidth=2.0)
+	d_lon = round(abs(lonmax-lonmin) / 5.)
+	d_lat = round(abs(latmax-latmin) / 5.)
+	parallels = np.arange(latmin,latmax,d_lat).astype(int)
+	meridians = np.arange(lonmin,lonmax,d_lon).astype(int)
+	m.drawparallels(parallels,labels=[1,0,0,0]) # draw parallels
+	m.drawmeridians(meridians,labels=[0,0,0,1])
+	
 
 	#draw station locations
 	for sta in stations:

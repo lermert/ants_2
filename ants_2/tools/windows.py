@@ -1,4 +1,5 @@
 import numpy as np
+from warnings import warn
 
 def my_centered(arr, newsize):
     # get the center portion of a 1-dimensional array correctly
@@ -20,8 +21,8 @@ sample. This correlation has length 2*n.')
     
     # Check if this will overlap with acausal side
     if i0 < n/2 - 1 and win_overlap:
-        print('Windows of causal and acausal side overlap. Set win_overlap==False to \
-skip these correlations.')
+        msg = 'Windows of causal and acausal side overlap. Set win_overlap==False to \
+skip these correlations.'
         warn(msg)
         
     elif i0 < n/2 - 1 and not win_overlap: 

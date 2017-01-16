@@ -129,11 +129,12 @@ def slice_traces(data, len_sec, min_len_sec, verbose, ofid):
     
     #- set initial start time
     data.sort(['starttime'])
-    starttime=data[0].stats.starttime
+    
     
     
     for k in np.arange(len(data)):
-           
+        
+        starttime=data[k].stats.starttime
         #- march through the trace until the endtime is reached
         while starttime < data[k].stats.endtime-min_len_sec:
             
