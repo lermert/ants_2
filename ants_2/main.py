@@ -231,8 +231,10 @@ def ln_energy_ratio(bandpass,speed,hw,dir,window,plot,sep_noise,overlap):
 @click.option('--msr', help='Measurement: obs, enr_a, enr_c',default='obs')
 @click.option('--cha',help='synthetics channel, e.g. MXZ, MXE...',default='MXZ')
 @click.option('--starttime',help='Plot stacks from a specific start time.',default=None)
+@click.option('--box',help='Geographic bounding box, format: latmin,latmax,lonmin,lonmax.\
+    lat must be in (-90,90) and lon in (-180,180).',default=None)
 def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix,
-    msr,cha,kernel_dir,max_dist):
+    msr,cha,kernel_dir,max_dist,box):
     
     """
     Plot measured log energy ratios on a map using ray-theoretical kernels.
@@ -248,7 +250,25 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix,
         raise NotImplementedError(msg)
 
 
-    
+    if isinstance(box,unicode):
+        try:
+            box = [float(l) for l in box.split(',')]
+            print("Geographic limits: {} {} {} {}".format(*box))
+        except:
+           print('Geographic limits format: latmin,latmax,lonmin,lonmax.\
+        lat must be in (-90,90) and lon in (-180,180)')
+           box = [-90.,89.,-180,179]
+    elif box is None:
+        box = [-80.,80.,-180.,179.]
+   
+    latmin = box[0]
+    latmax = box[1]
+    lonmin = box[2]
+    lonmax = box[3]
+
+    if lonmin > lonmax:
+        raise ValueError('Geographic limits format: latmin,latmax,lonmin,lonmax.\
+        lat must be in (-90,90) and lon in (-180,180)')
 
 
     if speed is not None:
@@ -268,7 +288,7 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr,csvfile,starttime,prefix,
         s = sourcemap(csvfile,speed,f,q,ray_step,min_snr,t0=starttime,
             prefix=prefix)
         s._temp_kernels()
-        s._bin_kernels(bin_size,bin_size)
+        s._bin_kernels(bin_size,bin_size,lonmin,lonmax,latmin,latmax)
         s.plot_sourcemap()
 
     else:
