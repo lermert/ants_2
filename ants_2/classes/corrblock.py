@@ -68,6 +68,7 @@ class CorrBlock(object):
 					self.baz2.append(geoinf[5])
 					self.baz1.append(geoinf[6])
 				except:
+					print("** station pair back azimuth could not be found.")
 					self.baz2.append(0)
 					self.baz1.append(0)
 
@@ -206,6 +207,7 @@ class CorrBlock(object):
 						tr1 = str1.select(location=loc1,channel=cha1)[0]
 						tr2 = str2.select(location=loc2,channel=cha2)[0]
 					except IndexError:
+						print("** channel not found.")
 						continue
 						
 					# - check minimum length requirement
