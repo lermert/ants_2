@@ -171,7 +171,7 @@ def ant_stack(input_dir,synth_dir,threshold_fix,threshold_var,threshold_cor,
 
 	
 	# window params for measurement
-	files = glob(os.path.join(input_dir,'*BHZ*BHZ*.h5'))
+	files = glob(os.path.join(input_dir,'*.h5'))
 	g = 3300.
 	window_params = {}
 	window_params['hw'] = 40.
