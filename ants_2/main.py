@@ -204,7 +204,7 @@ def sourcemap(f,speed,q,ray_step,bin_size,min_snr,box):
         lat must be in (-90,90) and lon in (-180,180)')
            box = [-90.,89.,-180,179]
     else:
-        box = [-90.,89.,-180,179]
+        box = [-80.,80.,-179,179]
 
    
     latmin = box[0]

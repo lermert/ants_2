@@ -6,6 +6,7 @@ import os
 from ants_2.tools.geo import get_midpoint, get_antipode, area_of_sqdeg
 from geographiclib import geodesic, geodesicline
 from ants_2.tools.plot import plot_grid
+from warnings import warn
 
 class sourcemap(object):
 
@@ -89,7 +90,7 @@ class sourcemap(object):
 
 		smap = np.array(zip(x,y,z,h)).transpose()
 		np.save('sourcemap.npy',smap)
-		os.system('rm tempfile.txt')
+		#os.system('rm tempfile.txt')
 		
 
 	def _temp_kernels(self):
@@ -146,14 +147,18 @@ class sourcemap(object):
 				elif nr == 2:
 					kernel[i0:i0+num_seg,2] = - np.exp(-gf_exp * kernel[i0:i0+num_seg,2]) 
 				
-			
+			msr = self.data.at[i,'obs']
+			if np.isnan(msr):
+				warn("NaN measurements found.")
+				continue 
+
 			# Multiply by measurement
-			kernel[:,2] *= self.data.at[i,'obs'] * -1. * -1. #The first -1 is because 
+			kernel[:,2] *= msr * -1. * -1. #The first -1 is because 
 			# the definition of the kernel is (A-A_obs) * K_dataless, and here A=0, so we
 			# need just -A_obs.
 			# The second -1 is because we want to look at the negative of the misfit gradient
 			# (we want to decrease misfit by our update; so that is the update direction)
-	
+			
 			# append ray coordinates and kernel to the temporary file
 			for k in range(2*num_seg):
 				fh.write("%7.2f %7.2f %8.5f\n" %tuple(kernel[k,:]))
