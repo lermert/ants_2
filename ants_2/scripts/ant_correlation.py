@@ -11,6 +11,7 @@ from ants_2.classes.corrblock import CorrBlock
 from ants_2.tools.bookkeep import correlation_inventory
 from obspy import UTCDateTime
 from glob import glob
+import pyasdf
 from copy import deepcopy
 # 'main':
 
@@ -79,27 +80,20 @@ def correlate():
         c = CorrBlock(block,cfg)
         c.run(output_file = ofid)
 
-# - block.correlate
- 
-# - block.write
+# - append all the stationxmls to the asdf file, if asdf output is chosen
 
-# - move the calculated correlations to the output directory
+    if cfg.format_output.upper() == "ASDF" and rank == 0:
+        filename = os.path.join('data','correlations','correlations.h5')
 
-#class fileentry(object):
+        with pyasdf.ASDFDataSet(filename) as ds:
 
- #   def __init__(self,filepath):
- #       self.filepath()
+            stations = []
+            for cha in ds.auxiliary_data.CrossCorrelation.list():
+                stations.append(cha.split('_')[0]+'.'+cha.split('_')[1])
+
+            stations = set(stations)
+
+            for sta in stations:
+                ds.add_stationxml(os.path.join('meta','stationxml','%s.xml' %sta))
 
 
-
-    # List all the files 
-
-    # loop through files:
-    # - if file ends before t0 or starts after t1, continue
-    # - register channel; all files of one channel belong to this channel (dictionary?)
-
-    # form a set of channels
-    # group channels by station
-    #
-    # How to attach time range of that file?
-    # Could be useful for plotting availability.

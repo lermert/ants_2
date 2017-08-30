@@ -179,10 +179,11 @@ DEFAULT_Correlation = {
     "corr_type": "ccc",
     "corr_maxlag": 0,
     "corr_normalize": True,
-    "interm_stack": None,
+    "interm_stack": 0,
     "corr_tensorcomponents": ["ZZ"],
     "n_stationpairs": 1,
     "input_format": "MSEED",
+    "format_output": "SAC",
     "locations_mix": False,
     "locations":[],
     "cap_glitch": False,
@@ -220,6 +221,7 @@ class ConfigCorrelation(object):
         self.corr_tensorcomponents = None
         self.corr_autocorr = None
         self.corr_normalize = None
+        self.format_output = None
         self.input_format = None
         self.n_stationpairs = None
         self.interm_stack = None

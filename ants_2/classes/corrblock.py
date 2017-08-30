@@ -50,7 +50,10 @@ class CorrBlock(object):
 
 				
 				self._correlations[cp_name] = CorrTrace(pair[0],pair[1],
-				self.sampling_rate,stck_int=cfg.interm_stack)
+				self.sampling_rate,stck_int=cfg.interm_stack,
+				prepstring=self.get_prepstring(),
+				window_length=cfg.time_window_length,
+				overlap=cfg.time_overlap,corr_params=None)
 				
 
 
@@ -230,7 +233,7 @@ class CorrBlock(object):
 
 		for corr in self._correlations.itervalues():
 			
-			corr.write_stack()
+			corr.write_stack(output_format=self.cfg.format_output)
 
 		print('Finished a correlation block.')
 

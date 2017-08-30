@@ -2,6 +2,7 @@ from ants_2.tools.util import get_geoinf
 from ants_2.tools.bookkeep import name_correlation_file
 from obspy import Trace
 import h5py
+import pyasdf
 import os
 
 
@@ -84,7 +85,7 @@ class CorrTrace(object):
 		self.prepstring = prepstring
 
 		# open the file to dump intermediate stack results
-		if self.stck_int is not None:
+		if self.stck_int > 0:
 			int_file = '{}.{}.windows.h5'.format(self.id,self.corr_type)
 			int_file = os.path.join('data','correlations',int_file)
 			int_file = h5py.File(int_file,'a')
@@ -99,6 +100,9 @@ class CorrTrace(object):
 			# Prepare a group for writing the data window
 			self.int_file = int_file
 			self.interm_data = int_file.create_group("corr_windows")
+		else:
+			self.int_file = None
+			self.interm_data = None
 
 
 
@@ -133,7 +137,7 @@ class CorrTrace(object):
 			else:
 				self.pstak = corr.copy()
 
-			if self.cnt_int == self.stck_int:
+			if self.cnt_int == self.stck_int and self.stck_int > 0:
 				# write intermediate result
 				self.write_int(t)
 				self.cnt_int = 0
@@ -144,23 +148,40 @@ class CorrTrace(object):
 		del corr
 
 
-	def write_stack(self):
+	def write_stack(self,output_format):
 
 		
-		filename = os.path.join('data','correlations','{}.SAC'.format(self.id))
+		# SAC format
 
-		#- open file and write correlation function
-		if self.cnt_tot > 0:
-			#- Add metadata
-			self.add_sacmeta()
-			self.stack.write(filename,format='SAC')
-		else:
-			print('** Correlation stack contains no windows. Nothing written.')
-			print(filename)
+		if output_format.upper() == 'SAC':
+			filename = os.path.join('data','correlations','{}.SAC'.format(self.id))
 
-		self.int_file.file.close()
-		
-		#- Only sac format now, maybe another format sometime
+			#- open file and write correlation function
+			if self.cnt_tot > 0:
+				#- Add metadata
+				self.add_sacmeta()
+				self.stack.write(filename,format='SAC')
+			else:
+				print('** Correlation stack contains no windows. Nothing written.')
+				print(filename)
+
+		#- ASDF format
+
+		if output_format.upper() == 'ASDF':
+			filename = os.path.join('data','correlations','correlations.h5')
+
+			if self.cnt_tot > 0:
+				with pyasdf.ASDFDataSet(filename) as ds:
+					info = self.add_asdfmeta()
+					ds.add_auxiliary_data(self.stack.data,
+				                          data_type="CrossCorrelation",
+				                          path="%s/%s" % (info["trace_id_a"].replace(".", "_"), 
+				                          	              info["trace_id_b"].replace(".", "_")),
+				                          parameters=info)
+
+		if self.int_file is not None:
+			self.int_file.file.close()
+
 		
     	
 		
@@ -228,5 +249,37 @@ class CorrTrace(object):
     
     
     
-    
+	def add_asdfmeta(self):
+
+		info = {}
+		info["trace_id_a"] = self.id.split("--")[0]
+		info["trace_id_b"] = self.id.split("--")[1]
+		info["trace_id_a"] = info["trace_id_a"].replace(" ", "")
+		info["trace_id_b"] = info["trace_id_b"].replace(" ", "")
+		info["dt"] = round(self.stack.stats.sampling_rate,6)
+		info["correlation_type"] = self.corr_type
+		info["max_lag"] = self.maxlag
+		info["lat_a"] = self.lat1
+		info["lat_b"] = self.lat2
+		info["lon_a"] = self.lon1
+		info["lon_b"] = self.lon2
+		info["dist"] = self.dist
+		info["az"] = self.az
+		info["baz"] = self.baz
+		info["preprocess_steps"] = self.prepstring
+		info["window_length"] = self.window_length
+		info["window_overlap"] = self.overlap
+
+		try:
+			info["noisedata_first"] = self.begin.strftime('%Y-%m-%dT%H:%M:%S')
+			info["noisedata_last"] = self.end.strftime('%Y-%m-%dT%H:%M:%S')
+		except:
+			pass
+
+		print(info)
+
+		return info
+
+
+
     
