@@ -9,7 +9,10 @@ import time
 #from obspy import read, Stream,  Trace, UTCDateTime
 #from glob import glob
 from numpy.random import randint
+from obspy import UTCDateTime
+from obspy.clients.fdsn.client import Client
 from ants_2.tools.bookkeep import find_files
+from ants_2.tools.prepare import get_event_filter
 from ants_2.config import ConfigPreprocess
 cfg = ConfigPreprocess()
 from ants_2.classes.prepstream import PrepStream
@@ -38,13 +41,27 @@ def preprocess():
      
     if rank == 0 and not os.path.exists(outdir):
         os.mkdir(outdir)
-    
     comm.Barrier()
+
+    if cfg.gcmt_exclude:
+
+        if rank == 0:
+            c = Client()
+            cata = c.get_events(starttime=UTCDateTime(cfg.gcmt_begin),
+                endtime=UTCDateTime(cfg.gcmt_end),catalog='GCMT',
+                minmagnitude=5.6)
     
-       
+            event_filter = get_event_filter(cata,cfg.Fs_new[-1],
+                t0=UTCDateTime(cfg.gcmt_begin),
+                t1=UTCDateTime(cfg.gcmt_end))
+
+        else:
+            event_filter = None
+        # communicate event_filter (would it be better 
+        # if every rank sets it up individually?)
+        event_filter = comm.bcast(event_filter,root=0)
 
     # Create own output directory, if necessary
-
     rankdir = os.path.join(outdir,
         'rank_%g' %rank)
     if not os.path.exists(rankdir):
@@ -86,31 +103,31 @@ def preprocess():
         print('Attempting to process:',file=ofid)
         print(os.path.basename(filepath),file=ofid)
         
-        try:
-            prstr = PrepStream(filepath,ofid)
-        except:
-            print('** Problem opening file, skipping: ',file=ofid)
-            print('** %s' %filepath,file=ofid)
-            continue
+        #try:
+        prstr = PrepStream(filepath,ofid)
+        #except:
+        #    print('** Problem opening file, skipping: ',file=ofid)
+        #    print('** %s' %filepath,file=ofid)
+        #    continue
 
         if len(prstr.stream) == 0:
             print('** No data in file, skipping: ',file=ofid)
             print('** %s' %filepath,file=ofid)
             continue
         
-        try:
-            prstr.prepare(cfg)
-        except:
-           print('** Problems preparing stream: ',file=ofid)
-           print('** %s' %filepath,file=ofid)
-           continue
+        #try:
+        prstr.prepare(cfg)
+        #except:
+        #   print('** Problems preparing stream: ',file=ofid)
+        #   print('** %s' %filepath,file=ofid)
+        #   continue
             
-        try:
-            prstr.process(cfg)
-        except:
-            print('** Problems processing stream: ',file=ofid)
-            print('** %s' %filepath,file=ofid)
-            continue
+        #try:
+        prstr.process(cfg,event_filter)
+        #except:
+        #    print('** Problems processing stream: ',file=ofid)
+        #    print('** %s' %filepath,file=ofid)
+        #    continue
 
         try:
             prstr.write(rankdir,cfg)

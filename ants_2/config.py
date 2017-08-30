@@ -67,8 +67,12 @@ DEFAULT_Preprocess = {
     "testrun":False,
     "input_dirs":[],
     "input_format":"MSEED",
+    "locations":['','00'],
     "quality_minlengthsec":0.,
     "quality_maxgapsec":0.,
+    "gcmt_exclude":False,
+    "gcmt_begin":'1970,01,01',
+    "gcmt_end":'1970,01,01',
     "event_exclude":False,
     "event_exclude_winsec":[],
     "event_exclude_std":2.,
@@ -76,12 +80,12 @@ DEFAULT_Preprocess = {
     "event_exclude_freqmin":0.01,
     "event_exclude_freqmax":1.0,
     "event_exclude_level":2.,
-    "wins":False,
-    "wins_len_sec":8192,
+    "wins":True,
+    "wins_len_sec":86400,
     "wins_trim":True,
     "wins_detrend":True,
     "wins_demean":True,
-    "wins_taper":0.05,
+    "wins_taper":0.01,
     "wins_taper_type":'cosine',
     "Fs_old":[],
     "Fs_new":[],
@@ -104,10 +108,14 @@ class ConfigPreprocess(object):
         self.testrun = None
         self.input_dirs = None
         self.input_format = None
+        self.locations = None
         
         self.quality_minlengthsec = None
         self.quality_maxgapsec = None
         
+        self.gcmt_exclude = None
+        self.gcmt_begin = None
+        self.gcmt_end = None
         self.event_exclude = None
         self.event_exclude_winsec = None
         self.event_exclude_std = None

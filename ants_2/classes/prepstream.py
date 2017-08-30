@@ -9,15 +9,27 @@ import ants_2.tools.prepare as pp
 from ants_2.tools.bookkeep import name_processed_file
 from obspy import Stream, read, read_inventory, Inventory
 from scipy.signal import cheb2ord, cheby2, zpk2sos, sosfilt
-
+from ants_2.config import ConfigPreprocess
+cfg = ConfigPreprocess()
 
 class PrepStream(object):
 
 	def __init__(self,filename,ofid=None):
 
 		
-		self.stream = read(filename) # This is a stream now
+		self.stream = read(filename)
+
+		# This is a stream now
 		# Obspy will throw an error if there are any IO problems.
+		tempstream = Stream()
+
+		for loc in cfg.locations:
+			tempstream += self.stream.select(location=loc)
+		#for i in range(len(self.stream)):
+		#	if self.stream[i].stats.location not in cfg.locations:
+		#		self.stream.pop(i)
+		#		i -= 1
+		self.stream = tempstream
 		self.ids = list(set([tr.id for tr in self.stream]))
 
 		self.ofid = ofid 
@@ -90,7 +102,7 @@ class PrepStream(object):
 
 		
 
-	def process(self,cfg):
+	def process(self,cfg,event_filter=None):
 		
 		# Preparatory steps
 		if cfg.testrun: 
@@ -127,12 +139,6 @@ class PrepStream(object):
 
 		# ToDo: Prettier event excluder
 		if cfg.event_exclude:
-
-			# Re-merging not necessary anymore, as slicing was moved to after decimation (to avoid gaps and overlaps)
-			# Re-merge for event exclusion
-			#if cfg.verbose:
-		#		print('* Re-Merging for event exclusion',
-	#				file = self.ofid)
 			self.stream._cleanup()
 			if cfg.verbose:
 				print('* Excluding high energy windows', 
@@ -140,13 +146,6 @@ class PrepStream(object):
 			# This is run twice
 			self.event_exclude(cfg)
 			self.event_exclude(cfg)
-
-			# if cfg.wins:
-			# 	if cfg.verbose:
-			# 		print('* Slicing stream', file = self.ofid)
-			# 	self.stream = pp.slice_traces(self.stream,
-			# 		cfg.wins_len_sec,cfg.quality_minlengthsec,
-			# 		cfg.verbose,self.ofid)
 
 
 		if Fs > cfg.Fs_new[-1]:
@@ -157,6 +156,11 @@ class PrepStream(object):
 		if cfg.testrun:
 			teststream += self.stream[0].copy()
 			testtitle.append('After antialias, downsampling')
+
+		if event_filter is not None:
+			if cfg.verbose:
+				print('* Excluding events in GCMT catalog')
+			self.exclude_by_catalog(event_filter)
 			
 		if cfg.wins:
 			if cfg.verbose:
@@ -257,7 +261,24 @@ class PrepStream(object):
 			raise ValueError(msg)
 
 
+	def exclude_by_catalog(self,event_filter):
 
+		for tr in self.stream:
+			tr.detrend('demean')
+			filt = event_filter.copy()
+			if tr.stats.starttime < event_filter.stats.starttime:
+				raise ValueError('Event exclusion is\
+					defined on the wrong time window.\
+					Edit event_start in config file and rerun.')
+			elif tr.stats.endtime > event_filter.stats.endtime:
+				raise ValueError('Event exclusion is\
+					defined on the wrong time window.\
+					Edit event_end in config file and rerun.')	
+			filt.trim(starttime=tr.stats.starttime,
+				endtime=tr.stats.endtime)
+			tr.data = tr.data * filt.data
+		print('* Excluded all events in GCMT catalogue with Mw >= 5.6.')
+		return()
 
 
 	def add_antialias(self,Fs,freq,maxorder=8):

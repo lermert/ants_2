@@ -1,9 +1,10 @@
 from __future__ import print_function
 import numpy as np
 from obspy import Stream, Trace
-from scipy.signal import hann
+from scipy.signal import hann, tukey
 from math import ceil
 
+import matplotlib.pyplot as plt
 
 def merge_traces(data, Fs, n_interp=0,maxgap=10.0, ofid=None):
     
@@ -36,7 +37,7 @@ def merge_traces(data, Fs, n_interp=0,maxgap=10.0, ofid=None):
                 continue
 
             trace.stats.sampling_rate = \
-            round(trace.stats.sampling_rate, 6)
+            round(trace.stats.sampling_rate, 4)
             # Throw data with the wrong sampling rate out.
             if trace.stats.sampling_rate not in Fs:
                 print('Bad sampling rate: %g on trace %s' 
@@ -266,4 +267,69 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
 
     return()
  
+def get_event_filter(catalogue,Fs,t0,t1):
+    """
+    Create a time-domain filter removing all events with Mw > 5.6 
+    according to GCMT catalogue and 
+    the empirical rule of Ekstroem (2001):
+    T = 2.5 + 40*(Mw-5.6) [hours]
+
+    catalogue: obspy catalogue object
+    """
+
+    nsamples = int((t1-t0) * Fs)
+    
+    event_filter = Trace(data=np.ones(nsamples))
+    event_filter.stats.starttime = t0
+    event_filter.stats.sampling_rate = Fs
+
+    for cat in catalogue:
+        # get origin time
+        t_o = cat.origins[0].time
+
+        # get magnitude
+        m = cat.magnitudes[0].mag
+        if cat.magnitudes[0].magnitude_type != 'MW':
+            raise ValueError('Magnitude must be moment magnitude.')
+        if m < 5.6:
+            raise ValueError('Event Mw < 5.6: Not ok with Ekstroem event exclusion rule.')
+
+        # determine T
+        T = 2.5 * 3600 + 40 * (m-5.6) * 3600 
+
+        # Add some time for taper!
+        n_taper = int(T * Fs * 0.05)
+        n_seg = int(T * Fs + n_taper)
+        
+       
+
+        # mute T - tapered window
+        seg = np.ones(n_seg)# create a window tapering down to zero in the middle.
+        
+        tap = tukey(n_seg,0.05)
+        seg *= tap
+        seg *= -1.
+        seg += 1.
+
+        # sample where it starts
+        i_seg = int((t_o - t0) * Fs) - n_taper
+        
+       
+        if i_seg >= 0 and i_seg+(T*Fs)+n_taper < len(event_filter.data):
+            event_filter.data[i_seg:i_seg+int(T*Fs)+n_taper] *= seg
+        elif i_seg < 0 and i_seg+(T*Fs)+n_taper < len(event_filter.data):
+            event_filter.data[0:i_seg+int(T*Fs)+n_taper] *= seg[-i_seg:]
+        elif i_seg >=0 and i_seg+(T*Fs)+n_taper > len(event_filter.data):
+            event_filter.data[i_seg:] *= seg[:(len(event_filter.data)-(i_seg+int(T*Fs)+n_taper))]
+        else:
+            raise ValueError('Something went wrong: check config parameters exclude_start,\
+                exclude_end')
+
+
+    return event_filter
+
+
+
+
+
 
