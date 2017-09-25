@@ -188,27 +188,35 @@ class CorrBlock(object):
 					try:
 						tr1 = str1.select(location=loc1,channel=cha1)[0]
 						tr2 = str2.select(location=loc2,channel=cha2)[0]
+						
 					except IndexError:
+						print("Channel not found",file=output_file)
 						continue
 						
 					# - check minimum length requirement
 					# - Quite often not fulfilled due to data gaps
 					if tr1.stats.npts < min_len_samples:
+						print("Trace length < min samples\n",file=output_file)
 						continue
 						
 					if tr2.stats.npts < min_len_samples:
+						print("Trace length < min samples\n",file=output_file)
 						continue
 
 					if True in np.isnan(tr1.data):
+						print("Trace contains nan\n",file=output_file)
 						continue
 
 					if True in np.isnan(tr2.data):
+						print("Trace contains nan\n",file=output_file)
 						continue
 
 					if True in np.isinf(tr1.data):
+						print("Trace contains inf\n",file=output_file)
 						continue
 
 					if True in np.isinf(tr2.data):
+						print("Trace contains inf\n",file=output_file)
 						continue
 
 
@@ -217,9 +225,11 @@ class CorrBlock(object):
 						max_lag_samples,self.cfg.corr_normalize)[0]
 					
 					# - add to stack
-					
 					if len(correlation) == 2 * max_lag_samples + 1:
 						self._correlations[cp_name]._add_corr(correlation,t)
+					else:
+						print('Empty window or all values zero in window.',
+							file=output_file)
 					
 						
 

@@ -126,7 +126,7 @@ class CorrTrace(object):
 
 		
 		self.cnt_tot += 1
-
+		
 
 		
 

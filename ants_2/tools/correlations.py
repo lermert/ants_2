@@ -84,6 +84,7 @@ def cross_covar(data1, data2, max_lag_samples, normalize, params=False):
     
     data1-=np.mean(data1)
     data2-=np.mean(data2)
+    
         
     # Make the data more convenient for C function np.correlate
 
@@ -97,19 +98,14 @@ def cross_covar(data1, data2, max_lag_samples, normalize, params=False):
         ren1 = np.correlate(data1,data1,mode='valid')[0]
         ren2 = np.correlate(data2,data2,mode='valid')[0]
 
-    if ren1 == 0.0 or ren2 == 0.0 and normalize:
+    if ren1 == 0.0 or ren2 == 0.0 and normalize == True:
         return([],[])
 
 
 
     # scipy.fftconvolve is way faster than np.correlate, and zeropads for non-circular convolution
     ccv = fftconvolve(data1[::-1],data2,mode='same')
-
-    #if normalize:
-    #    ccv /= (scale1*scale2) 
     
-
-
     if normalize:
         ccv /= ( sqrt(ren1) * sqrt(ren2) )
 

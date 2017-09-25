@@ -43,6 +43,8 @@ def preprocess():
         os.mkdir(outdir)
     comm.Barrier()
 
+    event_filter = None
+
     if cfg.gcmt_exclude:
 
         if rank == 0:
@@ -55,8 +57,7 @@ def preprocess():
                 t0=UTCDateTime(cfg.gcmt_begin),
                 t1=UTCDateTime(cfg.gcmt_end))
 
-        else:
-            event_filter = None
+        
         # communicate event_filter (would it be better 
         # if every rank sets it up individually?)
         event_filter = comm.bcast(event_filter,root=0)

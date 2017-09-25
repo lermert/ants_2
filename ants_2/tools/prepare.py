@@ -3,6 +3,7 @@ import numpy as np
 from obspy import Stream, Trace
 from scipy.signal import hann, tukey
 from math import ceil
+from sys import float_info
 
 import matplotlib.pyplot as plt
 
@@ -193,13 +194,13 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
             subtr = testtrace.slice(starttime=t0,endtime=t0+win-1).data
 
             enrg.append(np.sum(np.power(subtr,2))/win)
-            #subwin = int(win/3)
-            #[a,b,c] = [ np.std(subtr[0:subwin]),
-            #            np.std(subtr[subwin:2*subwin]),
-            #            np.std(subtr[2*subwin:3*subwin]) ]  
+            subwin = int(win/3)
+            [a,b,c] = [ np.std(subtr[0:subwin]),
+                        np.std(subtr[subwin:2*subwin]),
+                        np.std(subtr[2*subwin:3*subwin]) ]  
                               
                
-            #stdv.append(np.max([a,b,c])/np.min([a,b,c]))
+            stdv.append(np.max([a,b,c])/(np.min([a,b,c])+float_info.epsilon))
             t.append((t0+win/2).strftime('%s'))
             t0 += win
         
@@ -222,7 +223,7 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
                 
             mean_enrg = np.mean(enrg[i0:i1])
             
-            if enrg[i] > factor_enrg * mean_enrg: #or stdv[i] > thresh_stdv:
+            if enrg[i] > factor_enrg * mean_enrg and stdv[i] > thresh_stdv:
                 
                 j0 = sc - int(0.5*winsmp)#extsmp
                 j1 = sc + int(0.5*winsmp)#extsmp
