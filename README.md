@@ -1,6 +1,9 @@
 # ants_2
 Download, process and correlate continuous data 
 
+# Info on usage
+Information on usage can be found in the ants-doc.tar archive. After installation (see below), start with ants_quickstart.pdf.
+
 # Dependencies
 obspy
 
