@@ -1,7 +1,7 @@
 # ants_2
-Download, process and correlate continuous data 
+Download, process and correlate continuous seismic data 
 
-# Info on usage
+# Documentation
 Information on usage can be found in the ants-doc.tar archive. After installation (see below), start with ants_quickstart.pdf.
 
 # Dependencies
