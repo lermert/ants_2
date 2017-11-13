@@ -1,7 +1,9 @@
-
+import matplotlib
+matplotlib.use('tkagg')
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from matplotlib import mlab
+
 import matplotlib.tri as tri
 from scipy.signal import sosfilt
 from glob import glob
@@ -12,8 +14,8 @@ import time
 import numpy as np
 
 from obspy import read_inventory, read, Stream
+from obspy.signal.invsim import cosine_taper
 from ants_2.tools.treatment import bandpass as get_bandpass
-
 
 
 class stainfo(object):
@@ -156,6 +158,8 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 	cha2 = stats.attrs['channel2']
 
 	if bandpass is not None:
+		taper = cosine_taper(len(stack))
+		stack *= taper
 		sos = get_bandpass(df=Fs,freqmin=bandpass[0],
 			freqmax=bandpass[1],
 			corners=bandpass[2])
@@ -184,17 +188,24 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 	ax2.set_ylabel('Correlation window(s)')
 	line2, = ax2.plot(lag,stack)
 	text1 = ax2.set_title(str(cnt))
-
+	print(matplotlib.get_backend())
 	
 
-	plt.show()	
+	fig.canvas.draw()
+	plt.show(block=False)
 
 	for key in f['corr_windows'].keys():
 
 		cwindow = f['corr_windows'][key][:]
+		rms1 = f['corr_windows'][key].attrs['rms1']
+		rms2 = f['corr_windows'][key].attrs['rms2']
+		
+		if rms1.max() > 1.e-08 or rms2.max() > 1.e-08:
+			continue
 
 		if bandpass is not None:
 			
+			cwindow *= taper
 			firstpass = sosfilt(sos, cwindow)
 			cwindow =  sosfilt(sos, firstpass[::-1])[::-1]
 
@@ -208,8 +219,12 @@ def plot_converging_stack(inputfile,bandpass=None,pause=0.):
 
 		line1.set_ydata(stack)
 		line2.set_ydata(cwindow)
+		
 
 		fig.canvas.draw()
+		fig.show()
+		time.sleep(0.01)
+		#fig.canvas.draw()
 		cnt += 1
 		if pause > 0:
 			time.sleep(pause)
