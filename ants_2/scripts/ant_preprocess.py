@@ -41,6 +41,9 @@ def preprocess():
      
     if rank == 0 and not os.path.exists(outdir):
         os.mkdir(outdir)
+    if rank == 0 and cfg.verbose:
+        print(cfg.__dict__)
+    
     comm.Barrier()
 
     event_filter = None

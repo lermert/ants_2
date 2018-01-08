@@ -3,14 +3,14 @@ from glob import glob
 import os
 ####################
 # user input
-input_directory = './'#'/mnt/lnec/lermert/hum_reprocessing/data/raw/temp/'
+input_directory = '/Volumes/Japan_sea/temp/'#'/mnt/lnec/lermert/hum_reprocessing/data/raw/temp/'
 # start time
 start = UTCDateTime('2004,01,01')
 endtime = UTCDateTime('2005,01,01')
 # interval in seconds
 step = 30*86400
 # output directory
-output_directory = '.'#'/mnt/lnec/lermert/hum_reprocessing/data/raw/'
+output_directory = '/Volumes/Japan_sea/temp_out/'#'/mnt/lnec/lermert/hum_reprocessing/data/raw/'
 ####################
 
 
@@ -24,7 +24,8 @@ print files
 for f in files:
 	# read file
 	tr = read(f)
-	print tr
+	for t in tr:
+		t.stats.sampling_rate = round(t.stats.sampling_rate,4)
 
 	tr.merge(method=1,interpolation_samples=0)
 	

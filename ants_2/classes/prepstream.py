@@ -125,6 +125,36 @@ class PrepStream(object):
 		if len(self.stream) == 0: 
 			return()
 
+		if event_filter is not None:
+			if cfg.verbose:
+				print('* Excluding events in GCMT catalog',file = self.ofid)
+			self.exclude_by_catalog(event_filter)
+			
+
+		# ToDo: Prettier event excluder
+		if cfg.event_exclude:
+			self.stream._cleanup()
+			if cfg.verbose:
+				print('* Excluding high energy windows', 
+					file = self.ofid)
+			# This is run twice
+			self.event_exclude(cfg)
+			self.event_exclude(cfg)
+
+		if cfg.wins:
+			if cfg.verbose:
+				print('* Slicing stream', file = self.ofid)
+			self.stream = pp.slice_traces(self.stream,
+				cfg.wins_len_sec,cfg.quality_minlengthsec,
+				cfg.verbose,self.ofid)
+
+		if cfg.wins_taper is not None:
+			if cfg.verbose:
+				print('* Taper', file = self.ofid)
+			self.taper(
+				cfg.wins_taper_type,
+				cfg.wins_taper
+				)
 
 		if cfg.wins_detrend:
 			if cfg.verbose:
@@ -137,15 +167,9 @@ class PrepStream(object):
 			self.demean()
 
 
-		# ToDo: Prettier event excluder
-		if cfg.event_exclude:
-			self.stream._cleanup()
-			if cfg.verbose:
-				print('* Excluding high energy windows', 
-					file = self.ofid)
-			# This is run twice
-			self.event_exclude(cfg)
-			self.event_exclude(cfg)
+		if cfg.testrun:
+			teststream += self.stream[0].copy()
+			testtitle.append('After detrend, event exclusion')
 
 
 		if Fs > cfg.Fs_new[-1]:
@@ -156,32 +180,6 @@ class PrepStream(object):
 		if cfg.testrun:
 			teststream += self.stream[0].copy()
 			testtitle.append('After antialias, downsampling')
-
-		if event_filter is not None:
-			if cfg.verbose:
-				print('* Excluding events in GCMT catalog')
-			self.exclude_by_catalog(event_filter)
-			
-		if cfg.wins:
-			if cfg.verbose:
-				print('* Slicing stream', file = self.ofid)
-			self.stream = pp.slice_traces(self.stream,
-				cfg.wins_len_sec,cfg.quality_minlengthsec,
-				cfg.verbose,self.ofid)
-
-
-		if cfg.wins_taper is not None:
-			if cfg.verbose:
-				print('* Taper', file = self.ofid)
-			self.taper(
-				cfg.wins_taper_type,
-				cfg.wins_taper
-				)
-
-		if cfg.testrun:
-			teststream += self.stream[0].copy()
-			testtitle.append('After detrend, event exclusion')
-
 		
 
 		if cfg.instr_correction:
@@ -277,7 +275,7 @@ class PrepStream(object):
 			filt.trim(starttime=tr.stats.starttime,
 				endtime=tr.stats.endtime)
 			tr.data = tr.data * filt.data
-		print('* Excluded all events in GCMT catalogue with Mw >= 5.6.')
+		print('* Excluded all events in GCMT catalogue with Mw >= 5.6.', file=self.ofid)
 		return()
 
 
