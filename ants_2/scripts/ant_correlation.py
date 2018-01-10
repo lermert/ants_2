@@ -96,4 +96,7 @@ def correlate():
             for sta in stations:
                 ds.add_stationxml(os.path.join('meta','stationxml','%s.xml' %sta))
 
+if __name__ == "__main__":
+    correlate()
+
 
