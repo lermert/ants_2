@@ -9,7 +9,11 @@ from scipy.signal import sosfilt
 from glob import glob
 
 import os
-import h5py
+try:
+	import h5py
+except ImportError:
+	print('h5py cannot be used and if you set output="ASDF"\
+		or write_intermediate > 0, processing will fail.')
 import time
 import numpy as np
 
