@@ -263,19 +263,24 @@ class PrepStream(object):
 
 		for tr in self.stream:
 			tr.detrend('demean')
-			filt = event_filter.copy()
-			if tr.stats.starttime < event_filter.stats.starttime:
-				raise ValueError('Event exclusion is\
-					defined on the wrong time window.\
-					Edit event_start in config file and rerun.')
-			elif tr.stats.endtime > event_filter.stats.endtime:
-				raise ValueError('Event exclusion is\
-					defined on the wrong time window.\
-					Edit event_end in config file and rerun.')	
-			filt.trim(starttime=tr.stats.starttime,
-				endtime=tr.stats.endtime)
-			tr.data = tr.data * filt.data
+
+		
+		t_total = 0.0
+		for trace in self.stream:
+			t_total += trace.stats.npts
+		
+
+		for quake_window in event_filter:
+			self.stream.cutout(starttime=quake_window[0],
+				endtime=quake_window[1])
+
+		t_kept = 0.0
+		for trace in self.stream:
+			t_kept += trace.stats.npts
+		
+
 		print('* Excluded all events in GCMT catalogue with Mw >= 5.6.', file=self.ofid)
+		print('* Lost %g percent of original traces' %((t_total-t_kept)/t_total*100), file=self.ofid)
 		return()
 
 
@@ -460,6 +465,27 @@ class PrepStream(object):
 			msg = 'No inventory or seedresp found.'
 			raise ValueError(msg)
 	    
+			#filt = event_filter.copy()
+
+			# catalogs have the latest eq. first, but here want to 
+			# go in chronological order
+			#event_filter = event_filter[::-1]
+
+			#if tr.stats.starttime < event_filter[0][0]:
+			#	print(tr.stats.starttime)
+			#	print(event_filter[0][0])
+			#	raise ValueError('Event exclusion is\
+			#		defined on the wrong time window.\
+			#		Edit event_begin in config file and rerun.')
+			#elif tr.stats.endtime > event_filter[-1][1]:
+			#	print(tr.stats.endtime)
+			#	print(event_filter[-1][1])
+			#	raise ValueError('Event exclusion is\
+			#		defined on the wrong time window.\
+			#		Edit event_end in config file and rerun.')	
+			#filt.trim(starttime=tr.stats.starttime,
+			#	endtime=tr.stats.endtime)
+			#tr.data = tr.data * filt.data
 	    
 
     

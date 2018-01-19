@@ -278,16 +278,32 @@ def get_event_filter(catalogue,Fs,t0,t1):
     catalogue: obspy catalogue object
     """
 
-    nsamples = int((t1-t0) * Fs)
+    event_filter_list = []
+    #nsamples = int((t1-t0) * Fs)
     
-    event_filter = Trace(data=np.ones(nsamples))
-    event_filter.stats.starttime = t0
-    event_filter.stats.sampling_rate = Fs
+    #event_filter = Trace(data=np.ones(nsamples))
+    #event_filter.stats.starttime = t0
+    #event_filter.stats.sampling_rate = Fs
 
-    for cat in catalogue:
+
+    
+
+    for cat in catalogue[::-1]:
+        
         # get origin time
         t_o = cat.origins[0].time
+        #print('Original catalog onset: '+t_o.strftime("%Y.%j.%H:%M:%S"))
 
+        t_start = t_o-10
+
+        if len(event_filter_list) > 0:
+            if t_o < event_filter_list[-1][1]:
+                t_start = event_filter_list[-1][0]
+                event_filter_list.pop()
+            
+
+
+        #print('Selected onset: '+t_start.strftime("%Y.%j.%H:%M:%S"))
         # get magnitude
         m = cat.magnitudes[0].mag
         if cat.magnitudes[0].magnitude_type != 'MW':
@@ -296,38 +312,40 @@ def get_event_filter(catalogue,Fs,t0,t1):
             raise ValueError('Event Mw < 5.6: Not ok with Ekstroem event exclusion rule.')
 
         # determine T
-        T = 2.5 * 3600 + 40 * (m-5.6) * 3600 
+        T = 2.5 * 3600 + 61.8 * (m-5.6) * 3600 
+
+        event_filter_list.append([t_start,t_start+T+10])
 
         # Add some time for taper!
-        n_taper = int(T * Fs * 0.05)
-        n_seg = int(T * Fs + n_taper)
+        #n_taper = int(T * Fs * 0.05)
+        #n_seg = int(T * Fs + n_taper)
         
        
 
         # mute T - tapered window
-        seg = np.ones(n_seg)# create a window tapering down to zero in the middle.
+        #seg = np.ones(n_seg)# create a window tapering down to zero in the middle.
         
-        tap = tukey(n_seg,0.05)
-        seg *= tap
-        seg *= -1.
-        seg += 1.
+        #tap = tukey(n_seg,0.05)
+        #seg *= tap
+        #seg *= -1.
+        #seg += 1.
 
         # sample where it starts
-        i_seg = int((t_o - t0) * Fs) - n_taper
+        #i_seg = int((t_o - t0) * Fs) - n_taper
         
        
-        if i_seg >= 0 and i_seg+(T*Fs)+n_taper < len(event_filter.data):
-            event_filter.data[i_seg:i_seg+int(T*Fs)+n_taper] *= seg
-        elif i_seg < 0 and i_seg+(T*Fs)+n_taper < len(event_filter.data):
-            event_filter.data[0:i_seg+int(T*Fs)+n_taper] *= seg[-i_seg:]
-        elif i_seg >=0 and i_seg+(T*Fs)+n_taper > len(event_filter.data):
-            event_filter.data[i_seg:] *= seg[:(len(event_filter.data)-(i_seg+int(T*Fs)+n_taper))]
-        else:
-            raise ValueError('Something went wrong: check config parameters exclude_start,\
-                exclude_end')
+        #if i_seg >= 0 and i_seg+(T*Fs)+n_taper < len(event_filter.data):
+        #    event_filter.data[i_seg:i_seg+int(T*Fs)+n_taper] *= seg
+        #elif i_seg < 0 and i_seg+(T*Fs)+n_taper < len(event_filter.data):
+        #    event_filter.data[0:i_seg+int(T*Fs)+n_taper] *= seg[-i_seg:]
+        #elif i_seg >=0 and i_seg+(T*Fs)+n_taper > len(event_filter.data):
+        #    event_filter.data[i_seg:] *= seg[:(len(event_filter.data)-(i_seg+int(T*Fs)+n_taper))]
+        #else:
+        #    raise ValueError('Something went wrong: check config parameters exclude_start,\
+        #        exclude_end')
 
 
-    return event_filter
+    return event_filter_list
 
 
 
