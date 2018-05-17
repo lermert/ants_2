@@ -1,5 +1,6 @@
 from __future__ import print_function
 import sys
+print(sys.path)
 import os
 import click
 import scripts

@@ -19,7 +19,8 @@ setup(
         'Programming Language :: Python :: 2',
     ],
     keywords = 'Ambient seismic noise',
-    packages = find_packages(),
+    #packages = find_packages(),
+    modules = ['scripts','tools','classes'],
     #package_data = ,
     install_requires = [
         "obspy>=1.0.1",
