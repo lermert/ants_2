@@ -5,7 +5,7 @@ Download, process and correlate continuous seismic data
 Information on usage can be found in the ants-doc.tar archive. After installation (see below), start with ants_quickstart.pdf.
 
 # Dependencies
-obspy
+obspy (to install with conda, you have to use conda-forge channel, see: https://github.com/obspy/obspy/wiki/Installation-via-Anaconda)
 
 mpi4py (uses openmpi or mpich)
 
