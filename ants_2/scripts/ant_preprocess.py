@@ -24,9 +24,6 @@ size = comm.Get_size()
 print("Hello from rank %g" %rank)
 print("Size is %g" %size)
 
-if __name__ == '__main__':
-    preprocess()
-
 def preprocess():
     """
     
@@ -79,7 +76,7 @@ def preprocess():
     content = find_files(cfg.input_dirs,
         cfg.input_format)
        
-
+    print(content)
 
     # processing report file
 
@@ -128,12 +125,12 @@ def preprocess():
            print('** %s' %filepath,file=ofid)
            continue
             
-        try:
-            prstr.process(cfg,event_filter)
-        except:
-            print('** Problems processing stream: ',file=ofid)
-            print('** %s' %filepath,file=ofid)
-            continue
+       # try:
+        prstr.process(cfg,event_filter)
+       # except:
+       #     print('** Problems processing stream: ',file=ofid)
+       #     print('** %s' %filepath,file=ofid)
+       #     continue
 
         try:
             prstr.write(rankdir,cfg)

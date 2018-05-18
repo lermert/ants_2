@@ -241,7 +241,7 @@ class CorrBlock(object):
 
 		# - Write results
 
-		for corr in self._correlations.itervalues():
+		for corr in self._correlations.values():
 			
 			corr.write_stack(output_format=self.cfg.format_output)
 

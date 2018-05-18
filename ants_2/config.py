@@ -48,7 +48,7 @@ class ConfigDownload(object):
         """
 
         if not os.path.exists(CONFIG_Download):
-            with io.open(CONFIG_Download, 'wb') as fh:
+            with io.open(CONFIG_Download, 'w') as fh:
                 json.dump(DEFAULT_Download, fh, sort_keys=True, indent=4, separators=(",", ": "))
             return()
 
@@ -56,7 +56,7 @@ class ConfigDownload(object):
         with io.open(CONFIG_Download, 'r') as fh:
             data = json.load(fh)
             
-        for key, value in data.iteritems():
+        for key, value in data.items():
             setattr(self, key, value)
 
 
@@ -152,7 +152,7 @@ class ConfigPreprocess(object):
         """
 
         if not os.path.exists(CONFIG_Preprocess):
-            with io.open(CONFIG_Preprocess, 'wb') as fh:
+            with io.open(CONFIG_Preprocess, 'w') as fh:
                 json.dump(DEFAULT_Preprocess, fh, sort_keys=True, indent=4, separators=(",", ": "))
             return()
 
@@ -160,7 +160,7 @@ class ConfigPreprocess(object):
         with io.open(CONFIG_Preprocess, 'r') as fh:
             data = json.load(fh)
             
-        for key, value in data.iteritems():
+        for key, value in data.items():
             setattr(self, key, value)
         
         # Make sure freqs. for downsampling are in descending order.
@@ -240,13 +240,13 @@ class ConfigCorrelation(object):
         self.initialize()
 
 
-    def initialize(self):
+    def initialize(self,check_params=True):
 
         """Populates the class from ./config.json.
         If ./config.json does not exist, writes a default file and exits."""
 
         if not os.path.exists(CONFIG_Correlation):
-            with io.open(CONFIG_Correlation, 'wb') as fh:
+            with io.open(CONFIG_Correlation, 'w') as fh:
                 json.dump(DEFAULT_Correlation, fh, sort_keys=True, indent=4, separators=(",", ": "))
             return()
 
@@ -254,10 +254,11 @@ class ConfigCorrelation(object):
         with io.open(CONFIG_Correlation, 'r') as fh:
             data = json.load(fh)
             
-        for key, value in data.iteritems():
+        for key, value in data.items():
             setattr(self, key, value)
-
-        self.check_params()
+	
+        if check_params:
+            self.check_params()
 
 
     def check_params(self):

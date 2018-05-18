@@ -101,6 +101,7 @@ def station_pairs(staids,n,autocorr):
    
     #staids = self.stations.keys()
     # sort alphabetically
+    staids = list(staids) 
     staids.sort()
     blcks_stations = []
     #blcks_channels = []

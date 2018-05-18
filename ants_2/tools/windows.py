@@ -26,7 +26,7 @@ skip these correlations.'
         warn(msg)
         
     elif i0 < n/2 - 1 and not win_overlap: 
-        print 'Windows overlap, skipping...'
+        print('Windows overlap, skipping...')
         return(False)
         
     # Out of bounds?

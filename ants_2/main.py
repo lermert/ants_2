@@ -2,7 +2,7 @@ from __future__ import print_function
 import sys
 import os
 import click
-import scripts
+import ants_2.scripts
 from ants_2.config import ConfigDownload, ConfigPreprocess, ConfigCorrelation
 import warnings
 
@@ -53,8 +53,8 @@ def new_project():
     config.initialize()
     config = ConfigPreprocess()
     config.initialize()
-    onfig = ConfigCorrelation()
-    config.initialize()
+    config = ConfigCorrelation()
+    config.initialize(check_params=False)
     
     
     # .ToDO ... the other configurations follow here...
@@ -68,7 +68,7 @@ def new_project():
 @run.command(help='Download data\ninput file\
 input/config_download.json')
 def download():
-    from scripts.ant_download import ant_download
+    from ants_2.scripts.ant_download import ant_download
     ant_download()
 
 #==============================================================================
@@ -77,7 +77,7 @@ def download():
 
 @run.command(help='Remove instrument response\ninput file input/config_preprocess.json')
 def preprocess():
-    from scripts.ant_preprocess import preprocess
+    from ants_2.scripts.ant_preprocess import preprocess
     preprocess()
     
 #==============================================================================
@@ -86,7 +86,7 @@ def preprocess():
 
 @run.command(help='Correlation\ninput file input/config_correlation.json')
 def correlation():
-    from scripts.ant_correlation import correlate
+    from ants_2.scripts.ant_correlation import correlate
     correlate()
 
 
@@ -118,7 +118,7 @@ def ln_energy_ratio(bandpass,speed,hw,window,plot,sep_noise,overlap):
     Example: ants measure --speed 3000.0 --hw 100 --bandpass 0.1,0.2,4
     """
 
-    from scripts.ant_measurement import measurement
+    from ants_2.scripts.ant_measurement import measurement
     
 
     if isinstance(bandpass,unicode):
