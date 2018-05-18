@@ -237,7 +237,7 @@ def plot():
 @click.option('--proj',help='Selects matplotlib projection',default='merc',type=str)
 def station_map(proj,bluemarble):
 
-    from tools.plot import plot_stations
+    from ants_2.tools.plot import plot_stations
     plot_stations(projection=proj,bluemarble=bluemarble)
 
 
@@ -254,7 +254,7 @@ def windows_stack(input_file,bandpass,pause):
        except:
            print('Bandpass format must be: freqmin,freqmax,order')
            bandpass = None
-    from tools.plot import plot_converging_stack
+    from ants_2.tools.plot import plot_converging_stack
     plot_converging_stack(input_file,bandpass,float(pause))
 
 
@@ -270,7 +270,7 @@ def correlation(input_file,bandpass):
        except:
            print('Bandpass format must be: freqmin,freqmax,order')
            bandpass = None
-    from tools.plot import plot_correlation
+    from ants_2.tools.plot import plot_correlation
     plot_correlation(input_file,bandpass)
 
 
@@ -287,7 +287,7 @@ def section(directory,bandpass):
        except:
            print('Bandpass format must be: freqmin,freqmax,order')
            bandpass = None
-    from tools.plot import plot_section
+    from ants_2.tools.plot import plot_section
     plot_section(directory,bandpass)
 
 
