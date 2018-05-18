@@ -5,7 +5,7 @@ Download, process and correlate continuous seismic data
 Information on usage can be found in the ants-doc.tar archive. After installation (see below), start with ants_quickstart.pdf.
 
 # Dependencies
-obspy (to install with conda, you have to use conda-forge channel, see: https://github.com/obspy/obspy/wiki/Installation-via-Anaconda)
+obspy
 
 mpi4py (uses openmpi or mpich)
 
@@ -17,7 +17,10 @@ mock
 
 click
 
-It is recommended to install the dependencies with anaconda (https://www.continuum.io/downloads), except in the case of mpi4py where depending on OS installation using pip may work better.
+pyasdf (https://github.com/SeismicData/pyasdf)
+
+It is convenient to install the dependencies with anaconda (https://www.continuum.io/downloads). To install obspy and pyasdf, adding the conda-forge channel is necessary, see  https://github.com/obspy/obspy/wiki/Installation-via-Anaconda. If you want to write correlations to pyasdf directly, it is currently necessary to install it with parallel hdf5 support; see http://seismicdata.github.io/pyasdf/installation.html. In most cases it is easier to write them to SAC and convert to pyasdf after all correlations are computed.
+
 
 # Installation
 
