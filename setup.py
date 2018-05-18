@@ -16,7 +16,7 @@ setup(
     classifiers = [
         'Development Status :: 3 - Alpha',
         'Topic :: Seismology',
-        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
     ],
     keywords = 'Ambient seismic noise',
     packages = find_packages(),
