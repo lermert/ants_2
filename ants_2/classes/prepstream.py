@@ -1,13 +1,16 @@
 from __future__ import print_function
-import os
+import os,sys
 
 import numpy as np
 # Can comment plt out if you are not going to use testrun
 import matplotlib.pyplot as plt
 import time
+from datetime import datetime
 import ants_2.tools.prepare as pp
 from ants_2.tools.bookkeep import name_processed_file
 from obspy import Stream, read, read_inventory, Inventory
+from obspy.taup import TauPyModel
+from obspy.geodetics import gps2dist_azimuth
 from scipy.signal import cheb2ord, cheby2, zpk2sos, sosfilt
 from ants_2.config import ConfigPreprocess
 cfg = ConfigPreprocess()
@@ -103,7 +106,7 @@ class PrepStream(object):
 
         
 
-    def process(self,cfg,event_filter=None):
+    def process(self,cfg,event_filter=None,local_cat=[]):
         
         # Preparatory steps
         if cfg.testrun: 
@@ -116,7 +119,7 @@ class PrepStream(object):
             self.add_antialias(Fs,cfg.Fs_new[-1]*
                 cfg.Fs_antialias_factor)
         
-        if cfg.instr_correction:
+        if cfg.instr_correction or cfg.event_exclude_local_cat:
             self.add_inv(cfg.instr_correction_input,
                 cfg.instr_correction_unit)
         
@@ -125,12 +128,27 @@ class PrepStream(object):
         
         if len(self.stream) == 0: 
             return()
+        
 
         if event_filter is not None:
             if cfg.verbose:
                 print('* Excluding events in GCMT catalog',file = self.ofid)
+            t0 = datetime.now()
             self.exclude_by_catalog(event_filter)
+            print('* Removing events took %.1fs' %(datetime.now()-t0).total_seconds(), file = self.ofid)
+        
+        if len(self.stream) == 0: 
+            return()
             
+        if cfg.event_exclude_local_cat:
+            if cfg.verbose:
+                print('* Excluding events from local earthquake catalogue',
+                      file = self.ofid)
+            t0 = datetime.now()
+            self.exclude_by_local_catalog(local_cat)
+            print('* Removing events took %.1fs' %(datetime.now()-t0).total_seconds(), file = self.ofid)
+
+
 
         # ToDo: Prettier event excluder
         if cfg.event_exclude:
@@ -138,9 +156,11 @@ class PrepStream(object):
             if cfg.verbose:
                 print('* Excluding high energy windows', 
                     file = self.ofid)
+            t0 = datetime.now()
             # This is run twice
             self.event_exclude(cfg)
             self.event_exclude(cfg)
+            print('* Removing high energy windows took %.1fs' %(datetime.now()-t0).total_seconds(), file = self.ofid)
 
         if cfg.wins:
             if cfg.verbose:
@@ -232,7 +252,6 @@ class PrepStream(object):
 
 
     def add_inv(self,input,unit):
-
         
         
         if input == 'staxml':
@@ -285,6 +304,56 @@ class PrepStream(object):
         return()
 
 
+    def exclude_by_local_catalog(self,catalogue):
+
+        model = TauPyModel(model="iasp91")
+        
+        for tr in self.stream:
+            tr.detrend('demean')
+
+
+        t_total = 0.0
+        for trace in self.stream:
+            t_total += trace.stats.npts
+            
+            
+        for event in catalogue:
+            # get origin time
+            t0 = event.origins[0].time
+            lon0 = event.origins[0].longitude
+            lat0 = event.origins[0].latitude
+            depth0 = event.origins[0].depth/1000.
+            coords = self.inv.get_coordinates(self.ids[0])
+            data_start = self.stream[0].stats.starttime
+            if t0 < data_start-24*60*60.:
+                continue
+            data_end = self.stream[-1].stats.endtime
+            if t0 > data_end:
+                continue
+            dist = gps2dist_azimuth(lat0,lon0,
+                    coords["latitude"],coords["longitude"])[0]/1000.
+            p_arrival = model.get_travel_times(source_depth_in_km=depth0,
+                                  distance_in_degree=dist/111.19,phase_list=["P"])
+            if len(p_arrival)==0:
+                tcut1 = t0
+            else:
+                tcut1 = t0 + p_arrival[0].time - 10.0 #10s before p arrival
+            if tcut1<t0:
+                tcut1 = t0
+            tcut2 = t0 + dist/1.0 + 60. #slowest surface-wave arrival plus one minute
+            self.stream.cutout(starttime=tcut1,endtime=tcut2)
+
+
+        t_kept = 0.0
+        for trace in self.stream:
+            t_kept += trace.stats.npts
+        
+
+        print('* Excluded all events in local catalogue.', file=self.ofid)
+        print('* Lost %g percent of original traces' %((t_total-t_kept)/t_total*100), file=self.ofid)
+        return()
+        
+        
     def add_antialias(self,Fs,freq,maxorder=8):
         # From obspy
         nyquist = Fs * 0.5
