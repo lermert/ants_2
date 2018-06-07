@@ -11,6 +11,7 @@ import time
 from numpy.random import randint
 from obspy import UTCDateTime
 from obspy.clients.fdsn.client import Client
+from obspy.core.event.catalog import Catalog
 from ants_2.tools.bookkeep import find_files
 from ants_2.tools.prepare import get_event_filter
 from ants_2.config import ConfigPreprocess
@@ -63,6 +64,25 @@ def preprocess():
         # communicate event_filter (would it be better 
         # if every rank sets it up individually?)
         event_filter = comm.bcast(event_filter,root=0)
+    
+    if cfg.event_exclude_local_cat:
+
+        local_cat = Catalog()
+        
+        if rank == 0:
+            c = Client()
+            local_cat.extend(c.get_events(
+                    starttime=UTCDateTime(cfg.event_exclude_local_cat_begin),
+                    endtime=UTCDateTime(cfg.event_exclude_local_cat_end),
+                    #catalog=catalog,
+                    minmagnitude=cfg.event_exclude_local_cat_minmag,
+                    latitude=cfg.event_exclude_local_cat_lat,
+                    longitude=cfg.event_exclude_local_cat_lon,
+                    maxradius=cfg.event_exclude_local_cat_radius))
+            print(len(local_cat),"events in local earthquake catalog.")
+        # communicate event_filter (would it be better 
+        # if every rank sets it up individually?)
+        local_cat = comm.bcast(local_cat,root=0)
 
     # Create own output directory, if necessary
     rankdir = os.path.join(outdir,
@@ -75,14 +95,15 @@ def preprocess():
     
     content = find_files(cfg.input_dirs,
         cfg.input_format)
-       
-    print(content)
+    if rank==0:
+        print(len(content), "files found") 
+    #print(content)
 
     # processing report file
-
+    sys.stdout.flush()
     output_file = os.path.join(rankdir,
         'processing_report_rank%g.txt' %rank)
-
+    
     if os.path.exists(output_file):
         ofid = open(output_file,'a')
         print('UPDATING, Date:',file=ofid)
@@ -101,7 +122,7 @@ def preprocess():
 
     # Loop over input files
     for filepath in content:
-
+        
         print('-------------------------------------',file=ofid)
         print('Attempting to process:',file=ofid)
         print(os.path.basename(filepath),file=ofid)
@@ -125,12 +146,12 @@ def preprocess():
            print('** %s' %filepath,file=ofid)
            continue
             
-       # try:
-        prstr.process(cfg,event_filter)
-       # except:
-       #     print('** Problems processing stream: ',file=ofid)
-       #     print('** %s' %filepath,file=ofid)
-       #     continue
+        try:
+            prstr.process(cfg,event_filter,local_cat)
+        except:
+            print('** Problems processing stream: ',file=ofid)
+            print('** %s' %filepath,file=ofid)
+            continue
 
         try:
             prstr.write(rankdir,cfg)
@@ -139,7 +160,6 @@ def preprocess():
             print('** %s' %filepath,file=ofid)
 
         ofid.flush()
-
         
     ofid.close()
 

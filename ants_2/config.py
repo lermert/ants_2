@@ -73,6 +73,13 @@ DEFAULT_Preprocess = {
     "gcmt_exclude":False,
     "gcmt_begin":'1970,01,01',
     "gcmt_end":'1970,01,01',
+    "event_exclude_local_cat":False,
+    "event_exclude_local_cat_begin":'1970,01,01',
+    "event_exclude_local_cat_end":'1970,01,01',
+    "event_exclude_local_cat_minmag":2.0,
+    "event_exclude_local_cat_lat":0.00,
+    "event_exclude_local_cat_lon":0.00,
+    "event_exclude_local_cat_radius":10.0,
     "event_exclude":False,
     "event_exclude_winsec":[],
     "event_exclude_std":2.,
@@ -116,6 +123,13 @@ class ConfigPreprocess(object):
         self.gcmt_exclude = None
         self.gcmt_begin = None
         self.gcmt_end = None
+        self.event_exclude_local_cat = None
+        self.event_exclude_local_cat_begin = None
+        self.event_exclude_local_cat_end = None
+        self.event_exclude_local_cat_minmag = None
+        self.event_exclude_local_cat_lat = None
+        self.event_exclude_local_cat_lon = None
+        self.event_exclude_local_cat_radius = None
         self.event_exclude = None
         self.event_exclude_winsec = None
         self.event_exclude_std = None
