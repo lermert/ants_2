@@ -65,7 +65,33 @@ def get_correlation_params(data1,data2):
 
     return(rms1,rms2,ren1,ren2,rng1,rng2)
 
+def interference(data1,data2,max_lag_samples):
+
+    if len(data1) == 0 or len(data2) == 0:
+        return([],[])
+    # a zero mean is assumed.
+    data1-=np.mean(data1)
+    data2-=np.mean(data2)
+
+    interf = np.zeros(2*max_lag_samples+1)
+    lags = np.arange(-max_lag_samples,max_lag_samples,1)
     
+    for ix_l in range(len(lags)):
+        l = lags[ix_l]
+        if l < 0:
+            interf[ix_l] = np.mean(data1[-l:]+data2[:l])
+        elif l == 0:
+            interf[ix_l] = np.mean(data1+data2)
+        else:
+            #print(len(data1[:-l]),len(data2[l:]))
+            interf[ix_l] = np.mean(data1[:-l]+data2[l:])
+
+    return(interf)
+
+
+
+
+
 def cross_covar(data1, data2, max_lag_samples, normalize, params=False):
     
     #ToDo: deal with params

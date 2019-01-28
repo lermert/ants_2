@@ -10,7 +10,7 @@ import re
 from ants_2.tools.bookkeep import name_correlation_file
 from ants_2.tools.util import get_geoinf
 from ants_2.classes.corrtrace import CorrTrace
-from ants_2.tools.correlations import cross_covar
+from ants_2.tools.correlations import cross_covar, interference
 from ants_2.tools.treatment import ram_norm, whiten, cap, bandpass
 # list of possible channels combinations indicating that the data needs to be rotated.
 horizontals = ['RR','RT','TR','TT','TZ','ZT','RZ','ZR']
@@ -220,9 +220,14 @@ class CorrBlock(object):
 						continue
 
 
+					if self.cfg.corr_type == 'ccc':
 					# - correlate
-					correlation = cross_covar(tr1.data,tr2.data,
-						max_lag_samples,self.cfg.corr_normalize)[0]
+						correlation = cross_covar(tr1.data,tr2.data,
+							max_lag_samples,self.cfg.corr_normalize)[0]
+					elif self.cfg.corr_type == 'mic':
+						correlation = interference(tr1.data,tr2.data,
+							max_lag_samples)
+
 					
 					# - add to stack
 					if len(correlation) == 2 * max_lag_samples + 1:
