@@ -67,9 +67,6 @@ def correlate():
     # - get blocks of channel pairs
 
     c = correlation_inventory(cfg)
-    print(c)
-    
-
 
 # - LOOP over blocks:
 

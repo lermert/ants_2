@@ -5,7 +5,6 @@ import os
 
 def get_geoinf(id1,id2):
 
-
 		inv1 = '{}.{}.xml'.format(*id1.split('.')[0:2])
 		inv2 = '{}.{}.xml'.format(*id2.split('.')[0:2])
 

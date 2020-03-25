@@ -3,49 +3,50 @@ from glob import glob
 from obspy import UTCDateTime
 from copy import deepcopy
 
+
 def find_files(indirs, format):
-        
-    
-    content=list()
+
+    content = list()
 
     for indir in indirs:
-        
-        content.extend(glob(os.path.join(indir,'*'+format.lower())))
-        content.extend(glob(os.path.join(indir,'*'+format.upper())))
-        
+
+        content.extend(glob(os.path.join(indir, '*' + format.lower())))
+
+        if format not in ['*', '???']:
+            print(os.path.join(indir, '*' + format.upper()))
+            content.extend(glob(os.path.join(indir, '*' + format.upper())))
     content.sort()
-    
     return content
 
-def name_processed_file(stats,startonly=False):
-    
+
+def name_processed_file(stats, startonly=False):
+
     inf = [
         stats.network,
         stats.station,
         stats.location,
         stats.channel
     ]
-    
-        
-    t1=stats.starttime.strftime('%Y.%j.%H.%M.%S')
-    t2=stats.endtime.strftime('%Y.%j.%H.%M.%S')
-    if startonly: 
+
+    t1 = stats.starttime.strftime('%Y.%j.%H.%M.%S')
+    t2 = stats.endtime.strftime('%Y.%j.%H.%M.%S')
+    if startonly:
         t2 = '*'
-    
+
     inf.append(t1)
     inf.append(t2)
 
     inf.append(stats._format)
-    
+
     filenew = '{}.{}.{}.{}.{}.{}.{}'.format(*inf)
-    
+
     return filenew
-            
 
-def name_correlation_file(sta1,sta2,corr_type,fmt='SAC'):
 
-    name = '{}--{}.{}.{}'.format(sta1,sta2,corr_type,fmt)
-   
+def name_correlation_file(sta1, sta2, corr_type, fmt='SAC'):
+
+    name = '{}--{}.{}.{}'.format(sta1, sta2, corr_type, fmt)
+
     return(name)
 
 
@@ -96,7 +97,7 @@ def file_inventory(cfg):
     return(stations, data)
 
 
-def station_pairs(staids,n,autocorr):
+def station_pairs(staids,n,autocorr, only_autocorr=False):
    
     #staids = self.stations.keys()
     # sort alphabetically
@@ -112,6 +113,9 @@ def station_pairs(staids,n,autocorr):
 
     for i in range(n_ids):
         for j in range(i+n_auto,n_ids):
+
+            if only_autocorr and i != j:
+                continue
 
             if len(idprs) == n:
                 blcks_stations.append(idprs)
@@ -229,7 +233,7 @@ class correlation_inventory(object):
         # - Determine station pairs
         # - station pairs are grouped into blocks
         self.station_blocks = station_pairs(all_stations,
-            cfg.n_stationpairs, cfg.corr_autocorr)
+            cfg.n_stationpairs, cfg.corr_autocorr, cfg.corr_only_autocorr)
 
 
         self.blocks = []

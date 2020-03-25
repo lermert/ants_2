@@ -268,48 +268,43 @@ factor_enrg=1.,taper_perc=0.05,thresh_stdv=1.,ofid=None,verbose=False):
 
     return()
  
-def get_event_filter(catalogue,Fs,t0,t1):
+def get_event_filter(catalogue, Fs, t0, t1):
+
     """
-    Create a time-domain filter removing all events with Mw > 5.6 
-    according to GCMT catalogue and 
+    Create a time-domain filter removing all events with Mw > 5.6
+    according to GCMT catalogue and
     the empirical rule of Ekstroem (2001):
     T = 2.5 + 40*(Mw-5.6) [hours]
 
     catalogue: obspy catalogue object
-    """
-
+  """
     event_filter_list = []
-    #nsamples = int((t1-t0) * Fs)
-    
-    #event_filter = Trace(data=np.ones(nsamples))
-    #event_filter.stats.starttime = t0
-    #event_filter.stats.sampling_rate = Fs
-
-
-    
+    # nsamples = int((t1-t0) * Fs)
+    # event_filter = Trace(data=np.ones(nsamples))
+    # event_filter.stats.starttime = t0
+    # event_filter.stats.sampling_rate = Fs
 
     for cat in catalogue[::-1]:
-        
         # get origin time
         t_o = cat.origins[0].time
-        #print('Original catalog onset: '+t_o.strftime("%Y.%j.%H:%M:%S"))
-
-        t_start = t_o-10
+        print('Original catalog onset: ' + t_o.strftime("%Y.%j.%H:%M:%S"))
+        t_start = t_o - 10
 
         if len(event_filter_list) > 0:
             if t_o < event_filter_list[-1][1]:
                 t_start = event_filter_list[-1][0]
                 event_filter_list.pop()
-            
 
-
-        #print('Selected onset: '+t_start.strftime("%Y.%j.%H:%M:%S"))
+        print('Selected onset: '+t_start.strftime("%Y.%j.%H:%M:%S"))
         # get magnitude
         m = cat.magnitudes[0].mag
+        print("Magnitude ", m)
         if cat.magnitudes[0].magnitude_type != 'MW':
             raise ValueError('Magnitude must be moment magnitude.')
         if m < 5.6:
-            raise ValueError('Event Mw < 5.6: Not ok with Ekstroem event exclusion rule.')
+            print('Event Mw < 5.6: Not ok with Ekstroem event exclusion rule.\
+ Skipping event.')
+            continue
 
         # determine T
         T = 2.5 * 3600 + 61.8 * (m-5.6) * 3600 

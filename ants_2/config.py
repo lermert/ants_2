@@ -17,7 +17,8 @@ DEFAULT_Download = {
     "lat_min":-90.,
     "lat_max":90.,
     "lon_min":-180.,
-    "lon_max":180.
+    "lon_max":180.,
+    "download_response_only":False,
 }
 
 CONFIG_Download = os.path.join('input','config_download.json')
@@ -39,6 +40,7 @@ class ConfigDownload(object):
         self.lat_max = None
         self.lon_min = None
         self.lon_max = None
+        self.download_response_only = None
         
         self.initialize()
         
@@ -73,6 +75,7 @@ DEFAULT_Preprocess = {
     "gcmt_exclude":False,
     "gcmt_begin":'1970,01,01',
     "gcmt_end":'1970,01,01',
+    "gcmt_minmag": 5.6,
     "event_exclude_local_cat":False,
     "event_exclude_local_cat_begin":'1970,01,01',
     "event_exclude_local_cat_end":'1970,01,01',
@@ -102,10 +105,10 @@ DEFAULT_Preprocess = {
     "instr_correction_input":'resp',
     "instr_correction_prefilt":[],
     "instr_correction_waterlevel":0.,
-    
 }
 
 CONFIG_Preprocess = os.path.join('input','config_preprocess.json')
+
 
 class ConfigPreprocess(object):
     """Contains basic parameters for the job (paths, etc.)"""
@@ -116,13 +119,14 @@ class ConfigPreprocess(object):
         self.input_dirs = None
         self.input_format = None
         self.locations = None
-        
+
         self.quality_minlengthsec = None
         self.quality_maxgapsec = None
-        
+
         self.gcmt_exclude = None
         self.gcmt_begin = None
         self.gcmt_end = None
+        self.gcmt_minmag = None
         self.event_exclude_local_cat = None
         self.event_exclude_local_cat_begin = None
         self.event_exclude_local_cat_end = None
@@ -137,29 +141,27 @@ class ConfigPreprocess(object):
         self.event_exclude_freqmin = None
         self.event_exclude_freqmax = None
         self.event_exclude_level = None
-        
+
         self.wins = None
         self.wins_trim = None
         self.wins_detrend = None
         self.wins_demean = None
         self.wins_taper = None
         self.wins_taper_type = None
-        
+        self.wins_filter = None
+
         self.Fs_old = None
         self.Fs_new = None
         self.Fs_antialias_factor = None
-        
+
         self.instr_correction = None
         self.instr_correction_unit = None
         self.instr_correction_input = None
-        self.instr_correction_prefilt= None
+        self.instr_correction_prefilt = None
         self.instr_correction_waterlevel = None
-        
-        
+
         self.initialize()
-        
-        
-        
+
     def initialize(self):
         """Populates the class from ./config.json.
         If ./config.json does not exist, writes a default file and exits.
@@ -190,6 +192,7 @@ DEFAULT_Correlation = {
     "time_overlap":0.0,
     "time_min_window":3600,
     "corr_autocorr": False,
+    "corr_only_autocorr": False,
     "corr_type": "ccc",
     "corr_maxlag": 0,
     "corr_normalize": True,
@@ -234,6 +237,7 @@ class ConfigCorrelation(object):
         self.corr_maxlag = None
         self.corr_tensorcomponents = None
         self.corr_autocorr = None
+        self.corr_only_autocorr = None
         self.corr_normalize = None
         self.format_output = None
         self.input_format = None

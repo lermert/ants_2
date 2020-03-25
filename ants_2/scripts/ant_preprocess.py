@@ -3,11 +3,7 @@ from __future__ import print_function
 # Use the print function to be able to switch easily between stdout and a file
 from mpi4py import MPI
 import os
-import sys
 import time
-
-#from obspy import read, Stream,  Trace, UTCDateTime
-#from glob import glob
 from numpy.random import randint
 from obspy import UTCDateTime
 from obspy.clients.fdsn.client import Client
@@ -15,35 +11,30 @@ from obspy.core.event.catalog import Catalog
 from ants_2.tools.bookkeep import find_files
 from ants_2.tools.prepare import get_event_filter
 from ants_2.config import ConfigPreprocess
-cfg = ConfigPreprocess()
 from ants_2.classes.prepstream import PrepStream
-
+cfg = ConfigPreprocess()
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
-print("Hello from rank %g" %rank)
-print("Size is %g" %size)
+print("Hello from rank %g" % rank)
+print("Size is %g" % size)
+
 
 def preprocess():
     """
-    
-    This script preprocesses the MSEED files in the input directories 
+    This script preprocesses the MSEED files in the input directories
     specified in the input file.
- 
-    
     """
-
-
     # Create output directory, if necessary
 
-    outdir = os.path.join('data','processed')
-     
+    outdir = os.path.join('data', 'processed')
+
     if rank == 0 and not os.path.exists(outdir):
         os.mkdir(outdir)
     if rank == 0 and cfg.verbose:
         print(cfg.__dict__)
-    
+
     comm.Barrier()
 
     event_filter = None
@@ -53,28 +44,26 @@ def preprocess():
         if rank == 0:
             c = Client()
             cata = c.get_events(starttime=UTCDateTime(cfg.gcmt_begin),
-                endtime=UTCDateTime(cfg.gcmt_end),catalog='GCMT',
-                minmagnitude=5.6)
-    
-            event_filter = get_event_filter(cata,cfg.Fs_new[-1],
-                t0=UTCDateTime(cfg.gcmt_begin),
-                t1=UTCDateTime(cfg.gcmt_end))
+                                endtime=UTCDateTime(cfg.gcmt_end),
+                                catalog='GCMT',
+                                minmagnitude=cfg.gcmt_minmag)
 
-        
-        # communicate event_filter (would it be better 
+            event_filter = get_event_filter(cata, cfg.Fs_new[-1],
+                                            t0=UTCDateTime(cfg.gcmt_begin),
+                                            t1=UTCDateTime(cfg.gcmt_end))
+
+        # communicate event_filter (would it be better
         # if every rank sets it up individually?)
+
         event_filter = comm.bcast(event_filter,root=0)
-    
     if cfg.event_exclude_local_cat:
 
         local_cat = Catalog()
-        
         if rank == 0:
             c = Client()
             local_cat.extend(c.get_events(
                     starttime=UTCDateTime(cfg.event_exclude_local_cat_begin),
                     endtime=UTCDateTime(cfg.event_exclude_local_cat_end),
-                    #catalog=catalog,
                     minmagnitude=cfg.event_exclude_local_cat_minmag,
                     latitude=cfg.event_exclude_local_cat_lat,
                     longitude=cfg.event_exclude_local_cat_lon,
@@ -88,18 +77,16 @@ def preprocess():
 
     # Create own output directory, if necessary
     rankdir = os.path.join(outdir,
-        'rank_%g' %rank)
+                           'rank_%g' % rank)
     if not os.path.exists(rankdir):
         os.mkdir(rankdir)
 
-    
     #- Find input files
-    
     content = find_files(cfg.input_dirs,
         cfg.input_format)
     if rank==0:
         print(len(content), "files found") 
-    #print(content)
+
 
     # processing report file
     sys.stdout.flush()
@@ -140,7 +127,7 @@ def preprocess():
             print('** No data in file, skipping: ',file=ofid)
             print('** %s' %filepath,file=ofid)
             continue
-        
+
         try:
             prstr.prepare(cfg)
         except:
