@@ -106,50 +106,51 @@ def ant_download():
         # Time window loop
          #===============================================================================
         t = UTCDateTime(t1)
-        while t < UTCDateTime(t2):
-            
-            tstart = UTCDateTime(t).strftime('%Y-%m-%d')
-            tstartstr = UTCDateTime(t).strftime('%Y.%j.%H.%M.%S')
-            
-            tstep = min((UTCDateTime(t)+winlen),UTCDateTime(t2)).\
-            strftime('%Y-%m-%d')
-            tstepstr = min((UTCDateTime(t)+winlen),UTCDateTime(t2)).\
-            strftime('%Y.%j.%H.%M.%S')
-            
-            
-            #-Formulate a polite request
-            filename=os.path.join(targetloc,id+'.'+tstartstr+'.'+tstepstr+'.mseed')
-            
-              
-            if os.path.exists(filename)==False:
+        if not cfg.download_response_only:
+            while t < UTCDateTime(t2):
                 
-                #print network, station, location, channel
-                print('\n Rank '+str(rank),file=None)
-                print('\n Attempting to download data from: '+id,file=None)
-                print(filename)
+                tstart = UTCDateTime(t).strftime('%Y-%m-%d')
+                tstartstr = UTCDateTime(t).strftime('%Y.%j.%H.%M.%S')
                 
-                reqstring_iris = '{} {} -N {} -S {} -C {} -s {} -e {} -msl {} --lat \
-                {}:{} --lon {}:{} -o {} -Q {}'.format(os.path.join(_ROOT,'tools_ext','FetchData')\
-                ,vfetchdata,network,station,channel,tstart,tstep,minlen,lat_min,lat_max,lon_min,\
-                lon_max,filename,quality)
-                
-                reqstring_arclink = '{} {} -N {} -S {} -C {} -s {} -e {} -msl {} --lat \
-                {}:{} --lon {}:{} -o {} -Q {}'.format(os.path.join(_ROOT,'tools_ext','FetchDataArc')\
-                ,vfetchdata,network,station,channel,tstart,tstep,minlen,lat_min,lat_max,lon_min,\
-                lon_max,filename,quality)
+                tstep = min((UTCDateTime(t)+winlen),UTCDateTime(t2)).\
+                strftime('%Y-%m-%d')
+                tstepstr = min((UTCDateTime(t)+winlen),UTCDateTime(t2)).\
+                strftime('%Y.%j.%H.%M.%S')
                 
                 
-                #reqstring=_ROOT+'/tools/FetchData '+vfetchdata+' -N '+network+ \
-                # ' -S '+station+' -C '+channel+' -s '+tstart+' -e '+tstep+ \
-                # ' -msl '+minlen+' --lat '+lat_min+':'+lat_max+ \
-                #' --lon '+lon_min+':'+lon_max+' -o '+filename+' -Q '+quality
-                if cfg.data_center == 'iris' or cfg.data_center=='any':
-                    os.system(reqstring_iris)
-                elif cfg.data_center == 'arclink' or cfg.data_center=='any': 
-                    os.system(reqstring_arclink)
-            t += winlen
+                #-Formulate a polite request
+                filename=os.path.join(targetloc,id+'.'+tstartstr+'.'+tstepstr+'.mseed')
+                
+                  
+                if os.path.exists(filename)==False:
+                    #print network, station, location, channel
+                    print('\n Rank '+str(rank),file=None)
+                    print('\n Attempting to download data from: '+id,file=None)
+                    print(filename)
+                    
+                    reqstring_iris = '{} {} -N {} -S {} -C {} -s {} -e {} -msl {} --lat \
+                    {}:{} --lon {}:{} -o {} -Q {}'.format(os.path.join(_ROOT,'tools_ext','FetchData')\
+                    ,vfetchdata,network,station,channel,tstart,tstep,minlen,lat_min,lat_max,lon_min,\
+                    lon_max,filename,quality)
+                    
+                    reqstring_arclink = '{} {} -N {} -S {} -C {} -s {} -e {} -msl {} --lat \
+                    {}:{} --lon {}:{} -o {} -Q {}'.format(os.path.join(_ROOT,'tools_ext','FetchDataArc')\
+                    ,vfetchdata,network,station,channel,tstart,tstep,minlen,lat_min,lat_max,lon_min,\
+                    lon_max,filename,quality)
+                    
+                    
+                    #reqstring=_ROOT+'/tools/FetchData '+vfetchdata+' -N '+network+ \
+                    # ' -S '+station+' -C '+channel+' -s '+tstart+' -e '+tstep+ \
+                    # ' -msl '+minlen+' --lat '+lat_min+':'+lat_max+ \
+                    #' --lon '+lon_min+':'+lon_max+' -o '+filename+' -Q '+quality
+                    if cfg.data_center == 'iris' or cfg.data_center=='any':
+                        os.system(reqstring_iris)
+                    elif cfg.data_center == 'arclink' or cfg.data_center=='any': 
+                        os.system(reqstring_arclink)
+                t += winlen
         
         tstart = UTCDateTime(t1).strftime('%Y-%m-%d')
+        tstep = UTCDateTime(t2).strftime('%Y-%m-%d')
         print('\n Downloading response information from: '+id+'\n')
         
         #===============================================================================

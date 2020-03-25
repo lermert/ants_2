@@ -8,6 +8,8 @@ outdir = sys.argv[2]
 client = fdsn.Client()
 
 for station in stationlist:
+    if station == '':
+        continue
     try:
         net = station.split()[0].upper()
         sta = station.split()[1].upper()
