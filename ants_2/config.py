@@ -65,42 +65,46 @@ class ConfigDownload(object):
 
 
 DEFAULT_Preprocess = {
-    "verbose": True,
-    "testrun": False,
-    "input_dirs": [],
-    "input_format": "MSEED",
-    "locations": ['', '00'],
-    "quality_minlengthsec": 0.,
-    "quality_maxgapsec": 0.,
-    "gcmt_exclude": False,
-    "gcmt_begin": '1970,01,01',
-    "gcmt_end": '1970,01,01',
+    "verbose":True,
+    "testrun":False,
+    "input_dirs":[],
+    "input_format":"MSEED",
+    "locations":['','00'],
+    "quality_minlengthsec":0.,
+    "quality_maxgapsec":0.,
+    "gcmt_exclude":False,
+    "gcmt_begin":'1970,01,01',
+    "gcmt_end":'1970,01,01',
     "gcmt_minmag": 5.6,
-    "event_exclude": False,
-    "event_exclude_winsec": [],
-    "event_exclude_std": 2.,
-    "event_exclude_n": 4,
-    "event_exclude_freqmin": 0.01,
-    "event_exclude_freqmax": 1.0,
-    "event_exclude_level": 2.,
-    "wins": True,
-    "wins_filter": None,
-    "wins_len_sec": 86400,
-    "wins_trim": True,
-    "wins_detrend": True,
-    "wins_demean": True,
-    "wins_taper": 0.01,
-    "wins_taper_type": 'cosine',
-    "wins_cap_glitches": True,
-    "wins_cap_glitches_times_stdev": 20.,
-    "Fs_old": [],
-    "Fs_new": [],
-    "Fs_antialias_factor": 0.4,
-    "instr_correction": True,
-    "instr_correction_unit": 'VEL',
-    "instr_correction_input": 'resp',
-    "instr_correction_prefilt": [],
-    "instr_correction_waterlevel": 0.,
+    "event_exclude_local_cat":False,
+    "event_exclude_local_cat_begin":'1970,01,01',
+    "event_exclude_local_cat_end":'1970,01,01',
+    "event_exclude_local_cat_minmag":2.0,
+    "event_exclude_local_cat_lat":0.00,
+    "event_exclude_local_cat_lon":0.00,
+    "event_exclude_local_cat_radius":10.0,
+    "event_exclude":False,
+    "event_exclude_winsec":[],
+    "event_exclude_std":2.,
+    "event_exclude_n":4,
+    "event_exclude_freqmin":0.01,
+    "event_exclude_freqmax":1.0,
+    "event_exclude_level":2.,
+    "wins":True,
+    "wins_len_sec":86400,
+    "wins_trim":True,
+    "wins_detrend":True,
+    "wins_demean":True,
+    "wins_taper":0.01,
+    "wins_taper_type":'cosine',
+    "Fs_old":[],
+    "Fs_new":[],
+    "Fs_antialias_factor":0.4,
+    "instr_correction":True,
+    "instr_correction_unit":'VEL',
+    "instr_correction_input":'resp',
+    "instr_correction_prefilt":[],
+    "instr_correction_waterlevel":0.,
 }
 
 CONFIG_Preprocess = os.path.join('input','config_preprocess.json')
@@ -123,6 +127,13 @@ class ConfigPreprocess(object):
         self.gcmt_begin = None
         self.gcmt_end = None
         self.gcmt_minmag = None
+        self.event_exclude_local_cat = None
+        self.event_exclude_local_cat_begin = None
+        self.event_exclude_local_cat_end = None
+        self.event_exclude_local_cat_minmag = None
+        self.event_exclude_local_cat_lat = None
+        self.event_exclude_local_cat_lon = None
+        self.event_exclude_local_cat_radius = None
         self.event_exclude = None
         self.event_exclude_winsec = None
         self.event_exclude_std = None
