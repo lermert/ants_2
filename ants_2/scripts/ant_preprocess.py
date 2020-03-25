@@ -83,6 +83,8 @@ def preprocess():
         # communicate event_filter (would it be better 
         # if every rank sets it up individually?)
         local_cat = comm.bcast(local_cat,root=0)
+    else:
+        local_cat = None
 
     # Create own output directory, if necessary
     rankdir = os.path.join(outdir,
@@ -147,7 +149,7 @@ def preprocess():
            continue
             
         try:
-            prstr.process(cfg,event_filter,local_cat)
+            prstr.process(cfg,event_filter, local_cat)
         except:
             print('** Problems processing stream: ',file=ofid)
             print('** %s' %filepath,file=ofid)

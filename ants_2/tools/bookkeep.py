@@ -68,13 +68,13 @@ def file_inventory(cfg):
     files = find_files(indirs,filefmt)
     
     for f in files:
-
         # decide whether file fits time range
         fn = os.path.basename(f).split('.')
         st = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[4:9]))
         et = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[9:14]))
        
         if st > t1 or et < t0:
+            print("Data outside of chosen time range...")
             continue
         else:
 
@@ -93,7 +93,6 @@ def file_inventory(cfg):
                 data[channel] = []
 
             data[channel].append(f)
-    
     return(stations, data)
 
 
