@@ -47,7 +47,6 @@ def bandpass(freqmin, freqmax, df, corners=4):
 
 def whiten_taper(ind_fw1,ind_fw2,npts,taper_samples):
     
-    
     if ind_fw1 - taper_samples >= 0:
         i_l = ind_fw1 - taper_samples
     else:
@@ -77,8 +76,8 @@ def whiten_taper(ind_fw1,ind_fw2,npts,taper_samples):
     return taper
 
 
-def whiten(tr,freq1,freq2,taper_samples):
-    
+def whiten_trace(tr,freq1,freq2,taper_samples):
+
     # zeropadding should make things faster
     n_pad = next_pow_2(tr.stats.npts)
 
@@ -119,18 +118,32 @@ def whiten(tr,freq1,freq2,taper_samples):
     spec = np.concatenate((spec,spec_neg[:-1]))
 
     tr.data = np.real(np.fft.ifft(spec))
+
+
+def whiten(tr, freq1, freq2, taper_samples):
+    try:
+        whiten_trace(tr, freq1, freq2, taper_samples)
+    except AttributeError:
+        for t in tr:
+            whiten_trace(t, freq1, freq2, taper_samples)
     
     
-def cap(tr,cap_thresh):
+def cap_trace(tr,cap_thresh):
     
     std = np.std(tr.data*1.e6)
     gllow = cap_thresh * std * -1
     glupp = cap_thresh * std
     tr.data = np.clip(tr.data*1.e6,gllow,glupp)/1.e6
 
+def cap(tr, cap_thresh):
+    try:
+        cap_trace(tr, cap_thresh)
+    except AttributeError:
+        for t in tr:
+            cap_trace(t, cap_thresh)
     #return tr
     
-def ram_norm(tr,winlen,prefilt=None):
+def ram_norm_trace(tr,winlen,prefilt=None):
     
     trace_orig = tr.copy()
     hlen = int(winlen*tr.stats.sampling_rate/2.)
@@ -156,3 +169,9 @@ def ram_norm(tr,winlen,prefilt=None):
     
     tr.data = trace_orig.data / weighttrace
    
+def ram_norm(tr,winlen,prefilt=None):
+    try:
+        ram_norm_trace(tr, winlen,prefilt=None)
+    except AttributeError:
+        for t in tr:
+            ram_norm_trace(t,winlen,prefilt=None)

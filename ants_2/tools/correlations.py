@@ -140,4 +140,4 @@ def pcc_2(data1, data2, max_lag_samples, params=False):
     pcc2 = correlate(s2, s1, mode='full', method='fft')
     pcc2 /= len(data1)
 
-    return(my_centered(pcc2, 2 * max_lag_samples + 1), params)
+    return(my_centered(np.real(pcc2), 2 * max_lag_samples + 1), params)

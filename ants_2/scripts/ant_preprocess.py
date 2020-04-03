@@ -12,6 +12,7 @@ from ants_2.tools.bookkeep import find_files
 from ants_2.tools.prepare import get_event_filter
 from ants_2.config import ConfigPreprocess
 from ants_2.classes.prepstream import PrepStream
+import sys
 cfg = ConfigPreprocess()
 
 comm = MPI.COMM_WORLD

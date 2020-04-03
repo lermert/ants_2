@@ -6,7 +6,8 @@ import os
 import time
 from ants_2.config import ConfigCorrelation
 cfg = ConfigCorrelation()
-from ants_2.classes.corrblock import CorrBlock
+#from ants_2.classes.corrblock import CorrBlock
+from ants_2.classes.meman import CorrBlock
 
 from ants_2.tools.bookkeep import correlation_inventory
 from obspy import UTCDateTime

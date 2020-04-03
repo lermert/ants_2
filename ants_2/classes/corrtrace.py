@@ -8,7 +8,8 @@ except ImportError:
     or write_intermediate > 0, processing will fail.')
 import pyasdf
 import os
-
+import numpy as np
+from pympler import tracker
 
 class CorrTrace(object):
 
@@ -30,6 +31,8 @@ class CorrTrace(object):
         self.cnt_int = 0
         self.id1   = cha1
         self.id2   = cha2
+        self.chooser = np.zeros(10)
+        self.chooser[1] = 1
 
         if self.id1[-1] == 'E':
             cha = self.id1.split('.')[-1]
@@ -93,6 +96,7 @@ class CorrTrace(object):
         self.window_length = window_length
         self.overlap = overlap
         self.prepstring = prepstring
+        #self.mytracker = tracker.SummaryTracker()
 
         # open the file to dump intermediate stack results
         if self.stck_int > 0:
@@ -120,7 +124,6 @@ class CorrTrace(object):
         Add one correlation window to the stack
         """
 
-        
         if self.stack.stats.npts == 0:
             self.stack.data = corr 
             # set the lag
@@ -134,6 +137,7 @@ class CorrTrace(object):
         if self.stck_int is not None:
 
             if self.pstak is not None:
+
                 self.pstak += corr  # This will cause an error if the correlations have different length.
             else:
                 self.pstak = corr.copy()
@@ -143,10 +147,14 @@ class CorrTrace(object):
                 self.write_int(t)
                 self.cnt_int = 0
                 self.pstak = None
+                self.int_file.flush()
+
 
             self.cnt_int += 1
 
         del corr
+        # self.mytracker.print_diff()
+        return()
 
 
     def write_stack(self, output_format):
@@ -191,8 +199,20 @@ class CorrTrace(object):
     def write_int(self,t):
 
         tstr = t.strftime("%Y.%j.%H.%M.%S")
-        
-        self.interm_data.create_dataset(tstr,data=self.pstak)       
+        #print(self.int_file)
+        #print(tstr)
+        self.interm_data.create_dataset(tstr, shape=self.pstak.shape, dtype=self.pstak.dtype)
+        self.interm_data[tstr][:] = self.pstak
+        self.pstak = None
+        # flush was not effective.
+        # self.int_file.flush()
+
+        close_and_reopen = 1 # np.random.choice(self.chooser)
+        if close_and_reopen:
+            self.int_file.close()
+            int_file = os.path.join('data','correlations','{}.{}.windows.h5'.format(self.id,self.corr_type))
+            self.int_file = h5py.File(int_file, "a")
+            self.interm_data = self.int_file["corr_windows"]
 #
 #
     def add_sacmeta(self):
