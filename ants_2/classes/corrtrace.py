@@ -201,8 +201,11 @@ class CorrTrace(object):
         tstr = t.strftime("%Y.%j.%H.%M.%S")
         #print(self.int_file)
         #print(tstr)
-        self.interm_data.create_dataset(tstr, shape=self.pstak.shape, dtype=self.pstak.dtype)
-        self.interm_data[tstr][:] = self.pstak
+        try:
+            self.interm_data.create_dataset(tstr, shape=self.pstak.shape, dtype=self.pstak.dtype)
+            self.interm_data[tstr][:] = self.pstak
+        except RuntimeError:
+            pass
         self.pstak = None
         # flush was not effective.
         # self.int_file.flush()

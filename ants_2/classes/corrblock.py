@@ -91,7 +91,7 @@ must be above lower corner frequency."
         t = t_0
         # mytracker = tracker.SummaryTracker()
         while t <= t_end:
-            print(t)
+            print(t, file=output_file, end="\n")
             print("Memory usage in Gb loop begin ", process.memory_info().rss / 1.e9)
             if self.channels == []:
                 break
@@ -142,7 +142,7 @@ must be above lower corner frequency."
                         cpair = [re.sub('N$', 'R', str) for str in cpair]
 
                         cp_name = '{}--{}'.format(*cpair)
-                        print(cp_name, file=output_file)
+                        # print(cp_name, file=output_file)
 
                         loc1, cha1 = cpair[0].split('.')[2:4]
                         loc2, cha2 = cpair[1].split('.')[2:4]

@@ -15,6 +15,7 @@ from ants_2.classes.prepstream import PrepStream
 import sys
 cfg = ConfigPreprocess()
 
+
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
