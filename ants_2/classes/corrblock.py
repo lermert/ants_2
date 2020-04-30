@@ -55,7 +55,9 @@ must be above lower corner frequency."
                     CorrTrace(pair[0], pair[1], self.sampling_rate,
                               stck_int=cfg.interm_stack, prepstring=prepstring,
                               window_length=cfg.time_window_length,
-                              corr_type=cfg.corr_type,
+                              corr_type=cfg.corr_type, maxlag=cfg.corr_maxlag,
+                              t0=UTCDateTime(self.cfg.time_begin),
+                              t1=UTCDateTime(self.cfg.time_end),
                               overlap=cfg.time_overlap, corr_params=None)
 
         if any([i in cfg.corr_tensorcomponents for i in horizontals]):
@@ -89,39 +91,37 @@ must be above lower corner frequency."
 
         # Time loop
         t = t_0
+        same_t = 0
         # mytracker = tracker.SummaryTracker()
         while t <= t_end:
             print(t, file=output_file, end="\n")
-            print("Memory usage in Gb loop begin ", process.memory_info().rss / 1.e9)
+            print("Memory usage in Gb loop begin ", process.memory_info().rss / 1.e9, 
+                  file=output_file, end="\n")
             if self.channels == []:
                 break
             if len(self.data) == 0:
                 break
 
             #for corr_k, corr_v in self._correlations.items():
-            #  summary.print_(summary.summarize(corr_v))
-        
+            #    summary.print_(summary.summarize(corr_v))
             # if "windows" in locals():
             #     del windows
 
             windows = self.data.slide(win_len_seconds - self.delta, self.cfg.time_overlap,
                                       offset=(t - self.data[0].stats.starttime),
-                                      include_partial_windows=True)  # partial windows are sorted out later
-            # loop over all windows in this part of the data
+                                      include_partial_windows=False)
+
             for w in windows:
-                # print(w)
-                # print(w[0].stats.starttime)
-                
+
                 if len(w) < len(self.channels):
-                    continue
+                    same_t += 1
+                    break
 
-                
                 # Apply preprocessing
-                w = self.preprocess(w) # may return a deepcopy if non-linear processing is applied.
+                w = self.preprocess(w)
+                # may return a deepcopy if non-linear processing is applied.
                 # - station pair loop
-                for sp_i in range(len(self.station_pairs)):
-
-                    pair = self.station_pairs[sp_i]
+                for sp_i, pair in enumerate(self.station_pairs):
 
                     # - select traces
                     [net1, sta1] = pair[0].split('.')
@@ -133,16 +133,14 @@ must be above lower corner frequency."
                     if any([i in self.cfg.corr_tensorcomponents
                             for i in horizontals]):
 
-                        #if sta1 != sta2:
-                        str1, str2 = self.rotate(str1, str2, self.baz1[sp_i],
+                        str1, str2 = self.rotate(str1, str2,
+                                                 self.baz1[sp_i],
                                                  self.baz2[sp_i])
                     for cpair in self.channel_pairs[sp_i]:
-
                         cpair = [re.sub('E$', 'T', str) for str in cpair]
                         cpair = [re.sub('N$', 'R', str) for str in cpair]
 
                         cp_name = '{}--{}'.format(*cpair)
-                        # print(cp_name, file=output_file)
 
                         loc1, cha1 = cpair[0].split('.')[2:4]
                         loc2, cha2 = cpair[1].split('.')[2:4]
@@ -150,17 +148,17 @@ must be above lower corner frequency."
                         try:
                             tr1 = str1.select(location=loc1, channel=cha1)[0]
                             tr2 = str2.select(location=loc2, channel=cha2)[0]
-
                         except IndexError:
                             print("Channel not found", file=output_file)
                             continue
 
                         # - check minimum length requirement
                         # - Quite often not fulfilled due to data gaps
-                        traces_ok = self.perform_checks(tr1, tr2, output_file, 
+                        traces_ok = self.perform_checks(tr1, tr2, output_file,
                                                         min_len_samples)
                         if not traces_ok:
                             continue
+
                         if self.cfg.corr_type == 'ccc':
                             # correlate
                             correlation = cross_covar(tr1.data, tr2.data,
@@ -175,29 +173,25 @@ must be above lower corner frequency."
 
                         # add to stack
                         if len(correlation) == 2 * max_lag_samples + 1:
-                            self._correlations[cp_name]._add_corr(correlation, tr1.stats.starttime)
-                            # tstr = tr1.stats.starttime.strftime("%Y.%j.%H.%M.%S")
-                            # self._correlations[cp_name].interm_data.create_dataset(tstr,
-                            #                                                        shape=correlation.shape,
-                            #                                                        dtype=correlation.dtype)
-                            # self._correlations[cp_name].interm_data[tstr][:] = correlation
-                            # self._correlations[cp_name].int_file.flush()
+                            self._correlations[cp_name]._add_corr(correlation,
+                                                                  tr1.stats.starttime)
                             del correlation
                         else:
                             print('Empty window.',
                                   file=output_file)
                 t += self.cfg.time_window_length - self.cfg.time_overlap
 
-            self.update_data(t - self.cfg.time_window_length + self.cfg.time_overlap)
+            if same_t > 3:
+                t += self.cfg.time_window_length - self.cfg.time_overlap
+                same_t = 0
+
+            self.update_data(t)
             # summary.print_(summary.summarize(self.data))
         # - Write results
-            
         for corr in self._correlations.values():
             corr.write_stack(output_format=self.cfg.format_output)
 
         print('Finished a correlation block.')
-
-
 
     def perform_checks(self, tr1, tr2, output_file, min_len_samples):
         if tr1.stats.starttime != tr2.stats.starttime:
@@ -211,24 +205,23 @@ must be above lower corner frequency."
         if tr2.stats.npts < min_len_samples:
             print("Trace length < min samples\n", file=output_file)
             return(False)
-            
+
         if True in np.isnan(tr1.data):
             print("Trace contains nan\n", file=output_file)
             return(False)
-            
+
         if True in np.isnan(tr2.data):
             print("Trace contains nan\n", file=output_file)
             return(False)
-            
 
         if True in np.isinf(tr1.data):
             print("Trace contains inf\n", file=output_file)
             return(False)
-            
+
         if True in np.isinf(tr2.data):
             print("Trace contains inf\n", file=output_file)
             return(False)
-            
+
         return(True)
 
     # debugging @profile
@@ -272,7 +265,7 @@ must be above lower corner frequency."
         s_temp2 = str2.copy()
 
         try:
-            s_temp1.rotate('NE->RT',back_azimuth=baz1)
+            s_temp1.rotate('NE->RT', back_azimuth=baz1)
         except:
             if str1[0].stats.station != str2[0].stats.station:
                 print('** data not rotated for stream: ')
@@ -280,38 +273,29 @@ must be above lower corner frequency."
             pass
 
         try:
-            s_temp2.rotate('NE->RT',back_azimuth=baz2)
+            s_temp2.rotate('NE->RT', back_azimuth=baz2)
         except:
             if str1[0].stats.station != str2[1].stats.station:
                 print('** data not rotated for stream: ')
                 print(s_temp2)
             pass
-
-        return(s_temp1,s_temp2)
+        del str1, str2
+        return(s_temp1, s_temp2)
 
     # debugging @profile
     def update_data(self, t):
-       # mytracker = tracker.SummaryTracker()
-        # for each channel stream
-        
-        # for tr in self.data:
-        #     # take out all the traces that end before t
-        #     #print(channel_stream)
-            
-        #    # print(channel_stream)
-        #     # if there is a gap between the old and new data,
-        #     # start a new stream
-        #     if tr.stats.endtime <= t:
-        #         self.data.remove(tr)
-        self.data.trim(starttime=t)
-        #mytracker.print_diff()
+        # mytracker = tracker.SummaryTracker()
+        # mytracker.print_diff()
         # add a new round of data:
         for ix_c, channel in enumerate(self.channels):
+            if self.data.select(id=channel)[-1].stats.endtime > t + self.cfg.time_window_length:
+                continue
+
             while True:
                 try:
                     f = self.inv[channel].pop(0)
                 except IndexError:
-                    # No more data.
+                    # No more data. Remove this channel
                     self.channels.pop(ix_c)
                     break
                 try:
@@ -319,128 +303,55 @@ must be above lower corner frequency."
                     # success
                     break
                 except IOError:
-                    print("** Could not read trace: %s" %f)
+                    print("** Could not read trace: %s" % f)
                     # try the next file
-
-                # te = self.data.select(id=channel).sort(keys=["starttime"])[-1].stats.endtime
-                # if te > (t + self.cfg.time_window_length):
-                #     break
-
         self.data._cleanup()
         self.data.sort(keys=["starttime"])
-        #mytracker.print_diff()
+        self.data.trim(starttime=t)
+        # mytracker.print_diff()
         return()
-        # while channel_stream[-1].stats.endtime < (t + self.cfg.time_window_length):
-        #     try:
-        #         f = self.inv[channel_key].pop(0)
-        #     except IndexError:
-        #         self.channels.pop(channel_key)
-        #         break # go to the next channel
-        #     try:
-        #         # read from file
-        #         channel_stream += read(f)
-        #     except IOError:
-        #         print('** Could not read trace: %s' %f)
-
-        #     # once the desired time is reached, return
-        #     return()
-
-    # def update_data(self, t, win_len):
-
-    #     for trace in self.data:
-    #         # is the trace long enough?
-    #         if trace.stats.endtime < (t + win_len):
-    #             if self.inv[trace.id] == []:
-    #                 try:
-    #                     self.data.remove(trace)
-    #                     continue
-    #                 except:
-    #                     continue
-
-    #             # which trace to read next?
-    #             f = self.inv[trace.id].pop(0)
-
-    #             try:
-    #                 # read new trace
-    #                 newtrace = read(f)
-
-    #                 # add new trace to stream
-    #                 self.data += newtrace
-    #                 self.data._cleanup()
-    #             except:
-    #                 print('** Could not read trace: %s' %trace.id)
-
-
-    #             # Get the last bit of the trace that we still need
-    #             self.data.trim(starttime=t)
-
-    #             #self.data._cleanup()
-    #             #gc.collect()
-    #             # Try to create a new stream, to free up memory more successfully:
-    #             #self.data = Stream(traces=self.data.traces)
-
-                
-
-    #         else:
-    #             pass
-
-            
-                # Only trim -- use no more memory than necessary
-                #self.data.trim(starttime=t)
-        
-        # Try to create a new stream, to free up memory more successfully:
-        #self.data = Stream(traces=self.data.traces)
-
 
     def initialize_data(self, t0):
-
+        # t0: begin time of observation
+        t_min = t0 + self.cfg.time_window_length - self.cfg.time_overlap
         self.data = Stream()
+
         for channel in self.channels:
-            f = self.inv[channel].pop(0)
-            try:
-                self.data += read(f)
-                
-            except IOError:
-                print('** problems reading file %s' 
-                %self.inv.data[channel])
+            ttemp = 0
+            while ttemp < t_min:
+                f = self.inv[channel].pop(0)
+                try:
+                    self.data += read(f)
+                    ttemp = self.data[-1].stats.endtime
+                except IOError:
+                    print('** problems reading file %s'
+                          % self.inv.data[channel])
 
-        if min([tr.stats.endtime for tr in self.data]) <= t0:
-            self.data.trim(t0)
-        else:
-            self.data.trim(t0 + self.cfg.time_window_length - self.cfg.time_overlap)
-
-
-        # for tr in self.data:
-        #     if len(tr) == 0:
-        #         self.data.remove(tr)
-
-
+        self.data.trim(t0)
+        self.data._cleanup()
 
     def get_prepstring(self):
 
         prepstring = ''
-        if self.cfg.bandpass: 
-            prepstring +='b'
+        if self.cfg.bandpass:
+            prepstring += 'b'
         else:
             prepstring += '-'
-        if self.cfg.cap_glitch: 
+        if self.cfg.cap_glitch:
             prepstring += 'g'
         else:
-            prepstring += '-'    
-        if self.cfg.whiten: 
+            prepstring += '-'
+        if self.cfg.whiten:
             prepstring += 'w'
         else:
             prepstring += '-'
-        if self.cfg.onebit: 
+        if self.cfg.onebit:
             prepstring += 'o'
         else:
             prepstring += '-'
-        if self.cfg.ram_norm: 
+        if self.cfg.ram_norm:
             prepstring += 'r'
         else:
             prepstring += '-'
 
         return prepstring
-        
-        
-

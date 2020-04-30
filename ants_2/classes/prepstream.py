@@ -83,6 +83,9 @@ class PrepStream(object):
 
 
     def process(self,cfg,event_filter=None,local_cat=[]):
+
+        if len(self.stream) == 0:
+            return()
         # Preparatory steps
         if cfg.testrun:
             teststream = Stream(self.stream[0].copy())
@@ -230,7 +233,7 @@ class PrepStream(object):
             msg = 'input must be \'resp\' or \'staxml\''
             raise ValueError(msg)
 
-    def exclude_by_catalog(self, event_filter, minmag):
+    def exclude_by_catalog(self, event_filter, minmag=5.6):
 
         for tr in self.stream:
             tr.detrend('demean')

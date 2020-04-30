@@ -137,12 +137,12 @@ def preprocess():
            print('** %s' %filepath,file=ofid)
            continue
             
-        try:
-            prstr.process(cfg,event_filter, local_cat)
-        except:
-            print('** Problems processing stream: ',file=ofid)
-            print('** %s' %filepath,file=ofid)
-            continue
+        #try:
+        prstr.process(cfg,event_filter, local_cat)
+        #except:
+            #print('** Problems processing stream: ',file=ofid)
+            #print('** %s' %filepath,file=ofid)
+            #continue
 
         try:
             prstr.write(rankdir,cfg)

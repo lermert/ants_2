@@ -1,5 +1,5 @@
 from ants_2.tools.util import get_geoinf
-from ants_2.tools.bookkeep import name_correlation_file
+# from ants_2.tools.bookkeep import name_correlation_file
 from obspy import Trace
 try:
     import h5py
@@ -9,28 +9,32 @@ except ImportError:
 import pyasdf
 import os
 import numpy as np
-from pympler import tracker
+from math import ceil
+# from pympler import tracker
+
 
 class CorrTrace(object):
 
     """
-    Object holds correlation data along with metainformation (station id, geographic location).
+    Object holds correlation data along with metainformation
+    (station id, geographic location).
     """
 
-    def __init__(self,cha1,cha2,sampling_rate,corr_type='ccc',
-        t0=None,t1=None,stck_int=None,prepstring=None,
-        window_length=None,overlap=None,corr_params=None):
+    def __init__(self, cha1, cha2, sampling_rate,
+                 corr_type, maxlag, t0, t1, window_length, overlap,
+                 stck_int=0, prepstring=None,
+                 corr_params=None):
 
-        
-        self.stack = Trace() # These traces get 01,01,1970 as start date, a completely random choice of start time...no better idea. 
+        self.stack = Trace()  # These traces get 01,01,1970 as start date,
+        # a completely random choice of start time...no better idea.
         self.pstak = None
-        self.maxlag = None # maxlag will be set the first time a correlation is added.
+        self.maxlag = maxlag
 
-        # Parameters that must be set 
+        # Parameters that must be set
         self.cnt_tot = 0
         self.cnt_int = 0
-        self.id1   = cha1
-        self.id2   = cha2
+        self.id1 = cha1
+        self.id2 = cha2
         self.chooser = np.zeros(10)
         self.chooser[1] = 1
 
@@ -58,16 +62,17 @@ class CorrTrace(object):
             inf = self.id2.split('.')
             self.id2 = '{}.{}.{}.{}'.format(*(inf[0:3]+[cha]))
 
-
-        self.id    = self.id1 + '--' + self.id2
+        self.id = self.id1 + '--' + self.id2
         self.corr_type = corr_type
 
         self.stack.stats.sampling_rate = sampling_rate
         self.sampling_rate = sampling_rate
-        (self.stack.stats.network, 
-            self.stack.stats.station, 
-            self.stack.stats.location, 
-            self.stack.stats.channel) = cha1.split('.')
+        (self.stack.stats.network,
+         self.stack.stats.station,
+         self.stack.stats.location,
+         self.stack.stats.channel) = cha1.split('.')
+        self.begin = t0
+        self.end = t1
 
         try:
             geo_inf = get_geoinf(self.id1, self.id2)
@@ -75,45 +80,55 @@ class CorrTrace(object):
             self.lat2 = geo_inf[2]
             self.lon1 = geo_inf[1]
             self.lon2 = geo_inf[3]
-            self.az   = geo_inf[5]
-            self.baz  = geo_inf[6]
+            self.az = geo_inf[5]
+            self.baz = geo_inf[6]
             self.dist = geo_inf[4]
         except FileNotFoundError:
             self.lat1 = 0.
             self.lat2 = 0.
             self.lon1 = 0.
             self.lon2 = 0.
-            self.az   = 0.
-            self.baz  = 0.
+            self.az = 0.
+            self.baz = 0.
             self.dist = 0.
 
-
-        # Parameters that are optional and will be ignored if they are set to None
+        # Parameters that are optional and will be ignored if they are None
         self.stck_int = stck_int
         self.params = corr_params
-        self.begin = t0
-        self.end   = t1
         self.window_length = window_length
         self.overlap = overlap
         self.prepstring = prepstring
-        #self.mytracker = tracker.SummaryTracker()
+        # self.mytracker = tracker.SummaryTracker()
 
         # open the file to dump intermediate stack results
         if self.stck_int > 0:
-            int_file = '{}.{}.windows.h5'.format(self.id,self.corr_type)
-            int_file = os.path.join('data','correlations',int_file)
-            int_file = h5py.File(int_file,'a')
+            int_file = '{}.{}.windows.h5'.format(self.id, self.corr_type)
+            int_file = os.path.join('data', 'correlations', int_file)
+            int_file = h5py.File(int_file, 'a')
 
             # Save some basic information
-            int_stats = int_file.create_dataset('stats',data=(0,))
-            int_stats.attrs['sampling_rate']    = self.sampling_rate
-            int_stats.attrs['channel1']         = self.id1
-            int_stats.attrs['channel2']         = self.id2
-            int_stats.attrs['distance']         = self.dist
+            int_stats = int_file.create_dataset('stats', data=(0,))
+            int_stats.attrs['sampling_rate'] = self.sampling_rate
+            int_stats.attrs['channel1'] = self.id1
+            int_stats.attrs['channel2'] = self.id2
+            int_stats.attrs['distance'] = self.dist
 
             # Prepare a group for writing the data window
             self.int_file = int_file
-            self.interm_data = int_file.create_group("corr_windows")
+            self.corr_windows = int_file.create_group("corr_windows")
+            # create an array for the results
+            self.nlag = self.sampling_rate * (2 * self.maxlag) + 1
+            n_trace_max = (t1 - t0) / (self.window_length - self.overlap)
+            n_trace_max = int(ceil(n_trace_max))
+            self.interm_data = self.corr_windows.create_dataset("data",
+                                                                shape=(n_trace_max, self.nlag),
+                                                                dtype=np.float)
+            dtp = h5py.string_dtype()
+            self.data_keys = self.corr_windows.create_dataset("timestamps",
+                                                              shape=(n_trace_max,),
+                                                              dtype=dtp)
+            self.ix_d = 0
+
         else:
             self.int_file = None
             self.interm_data = None
@@ -127,8 +142,8 @@ class CorrTrace(object):
         if self.stack.stats.npts == 0:
             self.stack.data = corr 
             # set the lag
-            self.nlag = self.stack.stats.npts
-            self.maxlag = (self.nlag - 1) / 2 * self.sampling_rate
+            # self.nlag = self.stack.stats.npts
+            # self.maxlag = (self.nlag - 1) / 2 * self.sampling_rate
         else:
             self.stack.data += corr # This will cause an error if the correlations have different length.
         self.cnt_tot += 1
@@ -149,17 +164,14 @@ class CorrTrace(object):
                 self.pstak = None
                 self.int_file.flush()
 
-
             self.cnt_int += 1
 
         del corr
         # self.mytracker.print_diff()
         return()
 
-
     def write_stack(self, output_format):
 
-        
         # SAC format
 
         if output_format.upper() == 'SAC':
@@ -175,8 +187,7 @@ class CorrTrace(object):
                 print('** Correlation stack contains no windows. Nothing written.')
                 print(filename)
 
-        #- ASDF format
-
+        # - ASDF format
         if output_format.upper() == 'ASDF':
             filename = os.path.join('data','correlations','correlations.h5')
 
@@ -192,41 +203,41 @@ class CorrTrace(object):
         if self.int_file is not None:
             self.int_file.file.close()
 
-        
-        
-        
-
-    def write_int(self,t):
+    def write_int(self, t):
 
         tstr = t.strftime("%Y.%j.%H.%M.%S")
         #print(self.int_file)
         #print(tstr)
-        try:
-            self.interm_data.create_dataset(tstr, shape=self.pstak.shape, dtype=self.pstak.dtype)
-            self.interm_data[tstr][:] = self.pstak
-        except RuntimeError:
-            pass
+        #if tstr not in self.interm_data.keys():
+        # try:
+            #self.interm_data.create_dataset(tstr, shape=self.pstak.shape, dtype=self.pstak.dtype)
+            #self.interm_data[tstr][:] = self.pstak
+        self.interm_data[self.ix_d, :] = self.pstak
+        self.data_keys[self.ix_d] = tstr
+        self.ix_d += 1
+        # except:
+        #    pass
+
         self.pstak = None
         # flush was not effective.
         # self.int_file.flush()
 
-        close_and_reopen = 1 # np.random.choice(self.chooser)
+        close_and_reopen = np.random.choice(self.chooser)
         if close_and_reopen:
             self.int_file.close()
-            int_file = os.path.join('data','correlations','{}.{}.windows.h5'.format(self.id,self.corr_type))
+            int_file = os.path.join('data', 'correlations',
+                                    '{}.{}.windows.h5'.format(self.id,
+                                                              self.corr_type))
             self.int_file = h5py.File(int_file, "a")
-            self.interm_data = self.int_file["corr_windows"]
-#
-#
+            self.interm_data = self.int_file["corr_windows"]["data"]
+            self.data_keys = self.int_file["corr_windows"]["timestamps"]
+
     def add_sacmeta(self):
 
-        self.stack.stats.sac={}
-        #==============================================================================
-        #- Essential metadata  
-        #==============================================================================
-
-
-
+        self.stack.stats.sac = {}
+        #======================================================================
+        #- Essential metadata
+        #======================================================================
         self.stack.stats.sac['kt8']     =   self.corr_type
         self.stack.stats.sac['user0']   =   self.cnt_tot
 
