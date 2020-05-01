@@ -26,7 +26,8 @@ class CorrBlock(object):
         self.channels = block.channels
         self.station_pairs = block.station_pairs
         self.channel_pairs = block.channel_pairs
-        self.initialize_data(UTCDateTime(self.cfg.time_begin))
+        t0 = UTCDateTime(self.cfg.time_begin)
+        self.t0 = self.initialize_data(t0)
         self.sampling_rate = self.data[0].stats.sampling_rate
         self.delta = self.data[0].stats.delta
         if self.cfg.bandpass is not None:
@@ -56,7 +57,7 @@ must be above lower corner frequency."
                               stck_int=cfg.interm_stack, prepstring=prepstring,
                               window_length=cfg.time_window_length,
                               corr_type=cfg.corr_type, maxlag=cfg.corr_maxlag,
-                              t0=UTCDateTime(self.cfg.time_begin),
+                              t0=self.t0,
                               t1=UTCDateTime(self.cfg.time_end),
                               overlap=cfg.time_overlap, corr_params=None)
 
@@ -80,7 +81,7 @@ must be above lower corner frequency."
         print('Working on station pairs:')
         for sta in self.station_pairs:
             print("{}--{}".format(sta[0], sta[1]))
-        t_0 = UTCDateTime(self.cfg.time_begin)
+        t_0 = self.t0
         t_end = UTCDateTime(self.cfg.time_end)
         win_len_seconds = self.cfg.time_window_length
         min_len_samples = int(round(self.cfg.time_min_window *
@@ -327,8 +328,10 @@ must be above lower corner frequency."
                     print('** problems reading file %s'
                           % self.inv.data[channel])
 
-        self.data.trim(t0)
+        earliest_start_date = min([tr.stats.starttime for tr in self.data])
+        self.data.trim(max(t0, earliest_start_date))
         self.data._cleanup()
+        return(max(t0, earliest_start_date))
 
     def get_prepstring(self):
 
