@@ -171,28 +171,28 @@ def channel_pairs(channels1,channels2,cfg):
 
             comp = c1[-1] + c2[-1]
             
-            if comp == 'EE':
+            if comp == 'EE' and cfg.rotate:
                 comp = 'TT'
 
-            if comp == 'NN':
+            if comp == 'NN' and cfg.rotate:
                 comp = 'RR'
 
-            if comp == 'EN':
+            if comp == 'EN' and cfg.rotate:
                 comp = 'TR'
 
-            if comp == 'NE':
+            if comp == 'NE' and cfg.rotate:
                 comp = 'RT'
 
-            if comp == 'NZ':
+            if comp == 'NZ' and cfg.rotate:
                 comp = 'RZ'
 
-            if comp == 'ZN':
+            if comp == 'ZN' and cfg.rotate:
                 comp = 'ZR'
 
-            if comp == 'EZ':
+            if comp == 'EZ' and cfg.rotate:
                 comp = 'TZ'
 
-            if comp == 'ZE':
+            if comp == 'ZE' and cfg.rotate:
                 comp = 'ZT'
 
             if comp in tensor_comp:

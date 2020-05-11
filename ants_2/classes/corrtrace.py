@@ -119,7 +119,7 @@ class CorrTrace(object):
             # create an array for the results
             self.nlag = self.sampling_rate * (2 * self.maxlag) + 1
             n_trace_max = (t1 - t0) / (self.window_length - self.overlap)
-            n_trace_max = int(ceil(n_trace_max))
+            n_trace_max = int(ceil(n_trace_max) + 1)
             self.interm_data = self.corr_windows.create_dataset("data",
                                                                 shape=(n_trace_max, self.nlag),
                                                                 dtype=np.float)
@@ -149,24 +149,23 @@ class CorrTrace(object):
         self.cnt_tot += 1
 
 
-        if self.stck_int is not None:
+        if self.stck_int != 0:
 
             if self.pstak is not None:
-
-                self.pstak += corr  # This will cause an error if the correlations have different length.
+                self.pstak += corr
+                self.cnt_int += 1
             else:
                 self.pstak = corr.copy()
+                self.cnt_int = 1
 
-            if self.cnt_int == self.stck_int and self.stck_int > 0:
+            print(self.pstak.max())
+            if self.cnt_int == self.stck_int:
                 # write intermediate result
                 self.write_int(t)
                 self.cnt_int = 0
                 self.pstak = None
                 self.int_file.flush()
 
-            self.cnt_int += 1
-
-        del corr
         # self.mytracker.print_diff()
         return()
 
@@ -206,6 +205,7 @@ class CorrTrace(object):
     def write_int(self, t):
 
         tstr = t.strftime("%Y.%j.%H.%M.%S")
+        print(tstr)
         #print(self.int_file)
         #print(tstr)
         #if tstr not in self.interm_data.keys():

@@ -211,6 +211,7 @@ DEFAULT_Correlation = {
     "white_freqmax": 0.0,
     "white_taper_samples":100,
     "onebit": False,
+    "rotate": False,
     "ram_norm": False,
     "ram_window": 0.,
     "ram_prefilt": [],
@@ -250,6 +251,7 @@ class ConfigCorrelation(object):
         self.white_freqmin = None
         self.white_freqmax = None
         self.white_taper_samples = None
+        self.rotate = None
         self.ram_norm = None
         self.ram_window = None
         self.ram_prefilt = None
@@ -280,7 +282,9 @@ class ConfigCorrelation(object):
 
 
     def check_params(self):
-        components = ['ZZ','RR','TT','ZR','RZ','ZT','TZ','RT','TR']
+        components = ['ZZ','RR','TT','ZR','RZ','ZT','TZ','RT','TR',
+                       "EE", "EN", "EZ", "NE", "NN", "NZ", "ZE", "ZN",
+                       "11", "12", "1Z", "21", "22", "2Z", "Z1", "Z2"]
 
 
 

@@ -94,7 +94,7 @@ must be above lower corner frequency."
         t = t_0
         same_t = 0
         # mytracker = tracker.SummaryTracker()
-        while t <= t_end:
+        while t < t_end:
             print(t, file=output_file, end="\n")
             print("Memory usage in Gb loop begin ", process.memory_info().rss / 1.e9, 
                   file=output_file, end="\n")
@@ -113,6 +113,9 @@ must be above lower corner frequency."
                                       include_partial_windows=False)
 
             for w in windows:
+
+                if w[0].stats.starttime >= t_end:
+                    break
 
                 if len(w) < len(self.channels):
                     same_t += 1
@@ -138,8 +141,10 @@ must be above lower corner frequency."
                                                  self.baz1[sp_i],
                                                  self.baz2[sp_i])
                     for cpair in self.channel_pairs[sp_i]:
-                        cpair = [re.sub('E$', 'T', str) for str in cpair]
-                        cpair = [re.sub('N$', 'R', str) for str in cpair]
+
+                        if self.cfg.rotate:
+                            cpair = [re.sub('E$', 'T', str) for str in cpair]
+                            cpair = [re.sub('N$', 'R', str) for str in cpair]
 
                         cp_name = '{}--{}'.format(*cpair)
 
@@ -182,9 +187,12 @@ must be above lower corner frequency."
                                   file=output_file)
                 t += self.cfg.time_window_length - self.cfg.time_overlap
 
+
             if same_t > 3:
                 t += self.cfg.time_window_length - self.cfg.time_overlap
                 same_t = 0
+
+            print(t)
 
             self.update_data(t)
             # summary.print_(summary.summarize(self.data))
@@ -289,8 +297,10 @@ must be above lower corner frequency."
         # mytracker.print_diff()
         # add a new round of data:
         for ix_c, channel in enumerate(self.channels):
-            if self.data.select(id=channel)[-1].stats.endtime > t + self.cfg.time_window_length:
-                continue
+
+            if len(self.data.select(id=channel)) > 0:
+                if self.data.select(id=channel)[-1].stats.endtime > t + self.cfg.time_window_length:
+                    continue
 
             while True:
                 try:
