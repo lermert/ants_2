@@ -1,5 +1,4 @@
 # Correlation block object:
-from __future__ import print_function
 from obspy import Stream, UTCDateTime, read
 from scipy.signal import sosfilt
 import numpy as np
@@ -47,8 +46,9 @@ must be above lower corner frequency."
 
         for cp in self.channel_pairs:
             for pair in cp:
-                pair = [re.sub('E$', 'T', str) for str in pair]
-                pair = [re.sub('N$', 'R', str) for str in pair]
+                if self.cfg.rotate:
+                    pair = [re.sub('E$', 'T', str) for str in pair]
+                    pair = [re.sub('N$', 'R', str) for str in pair]
                 cp_name = '{}--{}'.format(*pair)
                 prepstring = self.get_prepstring()
 
@@ -59,13 +59,13 @@ must be above lower corner frequency."
                               corr_type=cfg.corr_type, maxlag=cfg.corr_maxlag,
                               t0=self.t0,
                               t1=UTCDateTime(self.cfg.time_end),
-                              overlap=cfg.time_overlap, corr_params=None)
+                              overlap=cfg.time_overlap, corr_params=None,
+                              rotate=cfg.rotate)
 
         if any([i in cfg.corr_tensorcomponents for i in horizontals]):
             self.baz1 = []
             self.baz2 = []
             for pair in self.channel_pairs[0]:
-                print(pair)
                 try:
                     geoinf = get_geoinf(pair[0], pair[1])
                     # find azimuth, backazimuth
@@ -88,16 +88,15 @@ must be above lower corner frequency."
                                     self.sampling_rate))
         max_lag_samples = int(round(self.cfg.corr_maxlag * self.sampling_rate))
 
-
-
         # Time loop
         t = t_0
-        same_t = 0
+        t_old = t_0
+
         # mytracker = tracker.SummaryTracker()
         while t < t_end:
             print(t, file=output_file, end="\n")
-            print("Memory usage in Gb loop begin ", process.memory_info().rss / 1.e9, 
-                  file=output_file, end="\n")
+            #print("Memory usage in Gb loop begin ", process.memory_info().rss / 1.e9, 
+            #      file=output_file, end="\n")
             if self.channels == []:
                 break
             if len(self.data) == 0:
@@ -108,19 +107,24 @@ must be above lower corner frequency."
             # if "windows" in locals():
             #     del windows
 
-            windows = self.data.slide(win_len_seconds - self.delta, self.cfg.time_overlap,
+            windows = self.data.slide(win_len_seconds - self.delta, win_len_seconds - self.cfg.time_overlap,
                                       offset=(t - self.data[0].stats.starttime),
                                       include_partial_windows=False)
 
             for w in windows:
-
-                if w[0].stats.starttime >= t_end:
+                t += self.cfg.time_window_length - self.cfg.time_overlap
+                if True in [wt.stats.endtime - wt.stats.starttime < (win_len_seconds - self.delta)\
+                            for wt in w]:
+                    # skip this window
+                    continue
+                
+                
+                if w[0].stats.endtime > t_end:
                     break
-
+                
                 if len(w) < len(self.channels):
-                    same_t += 1
                     break
-
+                print(w)
                 # Apply preprocessing
                 w = self.preprocess(w)
                 # may return a deepcopy if non-linear processing is applied.
@@ -132,6 +136,7 @@ must be above lower corner frequency."
                     [net2, sta2] = pair[1].split('.')
                     str1 = w.select(network=net1, station=sta1)
                     str2 = w.select(network=net2, station=sta2)
+
 
                     # - if horizontal components are involved, copy and rotate
                     if any([i in self.cfg.corr_tensorcomponents
@@ -185,16 +190,21 @@ must be above lower corner frequency."
                         else:
                             print('Empty window.',
                                   file=output_file)
+                    
+                #t = w[0].stats.endtime - self.cfg.time_overlap  # += self.cfg.time_window_length - self.cfg.time_overlap
+            if t == t_old:
                 t += self.cfg.time_window_length - self.cfg.time_overlap
 
-
-            if same_t > 3:
-                t += self.cfg.time_window_length - self.cfg.time_overlap
-                same_t = 0
-
-            print(t)
-
+            print("Trying update at time ", t)
             self.update_data(t)
+            if len(self.data) == 0:
+                break
+
+            # check if there is a gap
+            while t < self.data[0].stats.starttime - self.cfg.time_overlap:
+                t += self.cfg.time_overlap
+                print("jumping to t ", t)
+            t_old = t
             # summary.print_(summary.summarize(self.data))
         # - Write results
         for corr in self._correlations.values():
@@ -203,6 +213,7 @@ must be above lower corner frequency."
         print('Finished a correlation block.')
 
     def perform_checks(self, tr1, tr2, output_file, min_len_samples):
+                
         if tr1.stats.starttime != tr2.stats.starttime:
             print("Traces are not synchronous.", file=output_file)
             return(False)
@@ -261,7 +272,8 @@ must be above lower corner frequency."
                    self.cfg.white_taper_samples)
 
         if self.cfg.onebit:
-            tr.data = np.sign(tr.data)
+            for t in tr:
+                t.data = np.sign(t.data)
 
         if self.cfg.ram_norm:
             ram_norm(tr, self.cfg.ram_window, self.cfg.ram_prefilt)
@@ -311,6 +323,7 @@ must be above lower corner frequency."
                     break
                 try:
                     self.data += read(f)
+                    print("read trace to ", self.data[-1].stats.endtime)
                     # success
                     break
                 except IOError:

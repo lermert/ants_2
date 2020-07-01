@@ -66,6 +66,13 @@ class PrepStream(object):
         if len(self.stream) == 0:
             return()
 
+        if cfg.phaseshift:
+            if cfg.verbose:
+                print('* Shifting to millisecond', file=self.ofid)
+            self.stream = pp.pshift(self.stream, cfg.verbose, self.ofid)
+            if len(self.stream) == 0:
+                return()
+
         if cfg.wins_trim:
             if cfg.verbose:
                 print('* Trimming to full second', file=self.ofid)

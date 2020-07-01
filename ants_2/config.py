@@ -76,7 +76,7 @@ DEFAULT_Preprocess = {
     "gcmt_begin":'1970,01,01',
     "gcmt_end":'1970,01,01',
     "gcmt_minmag": 5.6,
-    "event_exclude_local_cat":False,
+    "event_exclude_local_cat": False,
     "event_exclude_local_cat_begin":'1970,01,01',
     "event_exclude_local_cat_end":'1970,01,01',
     "event_exclude_local_cat_minmag":2.0,
@@ -99,6 +99,7 @@ DEFAULT_Preprocess = {
     "wins_taper_type":'cosine',
     "Fs_old":[],
     "Fs_new":[],
+    "phaseshift": True,
     "Fs_antialias_factor":0.4,
     "instr_correction":True,
     "instr_correction_unit":'VEL',
@@ -150,6 +151,7 @@ class ConfigPreprocess(object):
         self.wins_taper_type = None
         self.wins_filter = None
 
+        self.phaseshift = None
         self.Fs_old = None
         self.Fs_new = None
         self.Fs_antialias_factor = None
@@ -282,14 +284,14 @@ class ConfigCorrelation(object):
 
 
     def check_params(self):
-        components = ['ZZ','RR','TT','ZR','RZ','ZT','TZ','RT','TR',
-                       "EE", "EN", "EZ", "NE", "NN", "NZ", "ZE", "ZN",
-                       "11", "12", "1Z", "21", "22", "2Z", "Z1", "Z2"]
+        chans = ["Z", "T", "R", "1", "2", "E", "N", "X", "Y"]
+        components = []
+        for c1 in chans:
+            for c2 in chans:
+                components.append(c1+c2)
+        components = list(set(components))
 
-
-
-      # lists
-
+        # lists
         if not isinstance(self.locations,list):
             msg = '\'locations\' in config_correlation.json must be list'
             raise TypeError(msg)
