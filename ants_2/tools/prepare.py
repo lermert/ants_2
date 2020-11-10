@@ -7,7 +7,7 @@ from sys import float_info
 
 import matplotlib.pyplot as plt
 
-def merge_traces(data, Fs, n_interp=0,maxgap=10.0, ofid=None):
+def merge_traces(data, Fs, n_interp=0, maxgap=10.0, ofid=None):
     
     """
     Small script to merge traces over short gaps. Gaps are filled with zeroes.
@@ -120,7 +120,7 @@ def trim_next_sec(data,verbose,ofid):
             
     return data
 
-def pshift(data, verbose, ofid):
+def pshift(data, verbose, ofid, perform_shift=True):
     """ If data has a sub-millisecond misalignment, phase shift it
     and correct the starttime
     data: obspy stream or trace
@@ -149,11 +149,12 @@ def pshift(data, verbose, ofid):
             else:
                 offset = tr.stats.delta - offset
             print("offset is ", offset, " s")
-
-            freq = np.fft.rfftfreq(tr.stats.npts, tr.stats.sampling_rate)
-            spec = np.fft.rfft(tr.data)
-            spec *= np.exp(1j * 2. * np.pi * freq * offset)
-            tr.data = np.fft.irfft(spec)
+            
+            if perform_shift:
+                freq = np.fft.rfftfreq(tr.stats.npts, tr.stats.sampling_rate)
+                spec = np.fft.rfft(tr.data)
+                spec *= np.exp(1j * 2. * np.pi * freq * offset)
+                tr.data = np.fft.irfft(spec)
             tr.stats.starttime = tr.stats.starttime + offset
             print("New starttime ", tr.stats.starttime)
     return data

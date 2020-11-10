@@ -132,6 +132,11 @@ def ant_download():
                     {}:{} --lon {}:{} -o {} -Q {}'.format(os.path.join(_ROOT,'tools_ext','FetchData')\
                     ,vfetchdata,network,station,channel,tstart,tstep,minlen,lat_min,lat_max,lon_min,\
                     lon_max,filename,quality)
+
+                    reqstring_scedc = " {} -N {} -S {} -L -- -C {} -s {} -e {} --lat \
+                    {}:{} --lon {}:{} -o {} -Q {}".format(vfetchdata,network,station,channel,\
+                    tstart,tstep,lat_min,lat_max,lon_min,\
+                    lon_max,filename,quality)
                     
                     reqstring_arclink = '{} {} -N {} -S {} -C {} -s {} -e {} -msl {} --lat \
                     {}:{} --lon {}:{} -o {} -Q {}'.format(os.path.join(_ROOT,'tools_ext','FetchDataArc')\
@@ -147,6 +152,8 @@ def ant_download():
                         os.system(reqstring_iris)
                     elif cfg.data_center == 'arclink' or cfg.data_center=='any': 
                         os.system(reqstring_arclink)
+                    elif cfg.data_center == "scedc":
+                        os.system("bash fdata_scedc.sh " + reqstring_scedc)
                 t += winlen
         
         tstart = UTCDateTime(t1).strftime('%Y-%m-%d')
@@ -173,7 +180,12 @@ def ant_download():
             os.system(reqstring_resp_iris)
         elif cfg.data_center == 'arclink' or cfg.data_center=='any':
             os.system(reqstring_resp_arclink)
-            
+        elif cfg.data_center == "scedc":
+            try:
+                os.system("bash fdata_scedc.sh " + reqstring_resp_iris)
+            except:
+                print("no metadata")
+                pass
         
 
     # Clean up (some files come back with 0 data)

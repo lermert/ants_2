@@ -60,7 +60,7 @@ class PrepStream(object):
         # - if asked, add an instr. response
         if cfg.verbose:
             print('* Merging stream', file=self.ofid)
-        self.stream = pp.merge_traces(self.stream, cfg.Fs_old, 5,
+        self.stream = pp.merge_traces(self.stream, cfg.Fs_old, cfg.interpolation_samples_gap,
                                       maxgap=cfg.quality_maxgapsec)
 
         if len(self.stream) == 0:
@@ -451,7 +451,7 @@ class PrepStream(object):
             for trace in self.stream:
                 inv = self.inv[trace.id]
                 inv['date'] = trace.stats.starttime
-                print(trace.data.max())
+
                 trace.simulate(paz_remove=None,
                                pre_filt=pre_filt,
                                seedresp=inv,

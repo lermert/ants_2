@@ -75,8 +75,8 @@ def correlate():
 
         block = deepcopy(b)
         # initialize a block of correlations
-        c = CorrBlock(block,cfg)
-        c.run(output_file = ofid)
+        cblock = CorrBlock(block,cfg)
+        cblock.run(output_file = ofid)
 
 # - append all the stationxmls to the asdf file, if asdf output is chosen
 
