@@ -16,14 +16,14 @@ import sys
 cfg = ConfigPreprocess()
 
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-print("Hello from rank %g" % rank)
-print("Size is %g" % size)
+# comm = MPI.COMM_WORLD
+# rank = comm.Get_rank()
+# size = comm.Get_size()
+# print("Hello from rank %g" % rank)
+# print("Size is %g" % size)
 
 
-def preprocess():
+def preprocess(rank, size, comm):
     """
     This script preprocesses the MSEED files in the input directories
     specified in the input file.

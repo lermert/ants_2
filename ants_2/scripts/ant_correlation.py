@@ -21,17 +21,17 @@ from copy import deepcopy
 
 # - initialize directories and report text files
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-print("Hello from rank %g" %rank)
-print("Size is %g" %size)
+# comm = MPI.COMM_WORLD
+# rank = comm.Get_rank()
+# size = comm.Get_size()
+# print("Hello from rank %g" %rank)
+# print("Size is %g" %size)
 
 
 
 
 
-def correlate():    
+def correlate(rank, size, comm):    
   # Create output directory, if necessary
 
     outdir = os.path.join('data','correlations')
@@ -95,6 +95,9 @@ def correlate():
                 ds.add_stationxml(os.path.join('meta','stationxml','%s.xml' %sta))
 
 if __name__ == "__main__":
-    correlate()
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    correlate(rank, size, comm)
 
 

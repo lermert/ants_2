@@ -18,14 +18,14 @@ from .. import _ROOT
 from obspy.clients import fdsn
 
 
-def ant_download():
+def ant_download(rank, size, comm):
  #===============================================================================
         # preliminaries
         #===============================================================================
         
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
+    # comm = MPI.COMM_WORLD
+    # rank = comm.Get_rank()
+    # size = comm.Get_size()
     outdir = os.path.join('data','raw')
     targetloc=os.path.join(outdir,'rank'+str(rank))
     if not os.path.isdir(targetloc):

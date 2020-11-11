@@ -1,4 +1,4 @@
-from __future__ import print_function
+from mpi4py import MPI
 import sys
 import os
 import click
@@ -7,6 +7,11 @@ from ants_2.config import ConfigDownload, ConfigPreprocess, ConfigCorrelation
 import warnings
 
 warnings.filterwarnings("ignore",message='Found more than one matching coordinates. Returning first.')
+
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
 
 @click.group()
 def run():
@@ -69,7 +74,7 @@ def new_project():
 input/config_download.json')
 def download():
     from ants_2.scripts.ant_download import ant_download
-    ant_download()
+    ant_download(rank, size, comm)
 
 #==============================================================================
 # Preprocessing
@@ -78,7 +83,7 @@ def download():
 @run.command(help='Remove instrument response\ninput file input/config_preprocess.json')
 def preprocess():
     from ants_2.scripts.ant_preprocess import preprocess
-    preprocess()
+    preprocess(rank, size, comm)
     
 #==============================================================================
 # Correlation
@@ -87,7 +92,7 @@ def preprocess():
 @run.command(help='Correlation\ninput file input/config_correlation.json')
 def correlation():
     from ants_2.scripts.ant_correlation import correlate
-    correlate()
+    correlate(rank, size, comm)
 
 
 

@@ -106,6 +106,12 @@ must be above lower corner frequency."
             windows = self.data.slide(win_len_seconds - self.delta, win_len_seconds - self.cfg.time_overlap,
                                       offset=(t - self.data[0].stats.starttime),
                                       include_partial_windows=False)
+            if len(self.readtimes) == 0:
+                # no more new data
+                # reset t_end
+                # finish what is still available and then exit
+                t_end = max([w[0].stats.endtime for w in windows] + [0])
+                # if there are no windows in this window, zero is the endtime and we exit immediately 
 
             for w in windows:
                 
@@ -321,7 +327,7 @@ must be above lower corner frequency."
                 try:
                     f = self.inv[channel].pop(0)
                     m_and_ms = self.readtimes.pop(0)
-                    print("Updated past ", mandms, "  ", f)
+                    print("Updated past ", m_and_ms, "  ", f)
                     try:
                         self.data += read(f)
                         print("read trace to ", self.data[-1].stats.endtime)
