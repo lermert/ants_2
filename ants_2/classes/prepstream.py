@@ -30,9 +30,6 @@ class PrepStream(object):
         for loc in cfg.locations:
             tempstream += self.stream.select(location=loc)
 
-        for tr in self.stream:
-            if tr.stats.network == "IG":
-                tr.stats.network = "VM"
 
         self.stream = tempstream
         self.ids = list(set([tr.id for tr in self.stream]))
