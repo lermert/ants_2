@@ -75,8 +75,15 @@ def whiten_taper(ind_fw1,ind_fw2,npts,taper_samples):
 
     return taper
 
+def ma(data, n_samples_half):
+    mav = []
+    for i in range(len(data)):
+        dat_av = data[max(0, i - n_samples_half): min(len(data), i + n_samples_half + 1)]
+        mav.append(1./len(dat_av) * sum(dat_av))
+    return(np.array(mav))
 
-def whiten_trace(tr,freq1,freq2,taper_samples):
+
+def whiten_trace(tr,freq1,freq2,taper_samples, moving_average_samples=4):
 
     # zeropadding should make things faster
     n_pad = next_pow_2(tr.stats.npts)
@@ -104,9 +111,7 @@ def whiten_trace(tr,freq1,freq2,taper_samples):
     tr.taper(max_percentage=0.05, type='cosine')
     spec = np.fft.rfft(tr.data)
     
-    # Don't divide by 0
-    #tol = np.max(np.abs(spec)) / 1e5
-    #spec /= np.abs(spec+tol)
+    spec = ma(spec, moving_average_samples)
     
     # whiten. This elegant solution is from MSNoise:
     spec =  white_tape * np.exp(1j * np.angle(spec))

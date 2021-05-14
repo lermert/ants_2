@@ -30,6 +30,10 @@ class PrepStream(object):
         for loc in cfg.locations:
             tempstream += self.stream.select(location=loc)
 
+        for tr in self.stream:
+            if tr.stats.network == "IG":
+                tr.stats.network = "VM"
+
         self.stream = tempstream
         self.ids = list(set([tr.id for tr in self.stream]))
 
@@ -260,6 +264,10 @@ class PrepStream(object):
         print('* Excluded all events in GCMT catalogue with Mw >=' +
               str(minmag),
               file=self.ofid)
+        if t_total == 0:
+            print('** No data remaining.')
+            return()
+
         print('* Lost %g percent of original traces'
               % ((t_total - t_kept) / t_total * 100), file=self.ofid)
         return()
@@ -345,15 +353,16 @@ class PrepStream(object):
         Check if trace contains nan, inf and takes them out of the stream
         """
         for i in range(len(self.stream)):
-
             trace = self.stream[i]
             if True in np.isnan(trace.data):
                 if verbose:
                     print('** trace contains NaN, discarded',
                           file=self.ofid)
 
-                del_trace = self.stream.pop(i)
-                print(del_trace, file=self.ofid)
+                # del_trace = self.stream.pop(i)
+                # i -= 1
+                # print(del_trace, file=self.ofid)
+                self.stream[i].data = np.array([])
                 continue
 
             # check infinity
@@ -362,8 +371,10 @@ class PrepStream(object):
                     print('** trace contains infinity, discarded',
                           file=self.ofid)
 
-                del_trace = self.stream.pop(i)
-                print(del_trace, file=self.ofid)
+                # del_trace = self.stream.pop(i)
+                # i -= 1
+                # print(del_trace, file=self.ofid)
+                self.stream[i].data = np.array([])
                 continue
 
     def cap_glitches(trace, cfg):

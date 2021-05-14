@@ -34,7 +34,8 @@ def ant_download(rank, size, comm):
     if os.path.isdir(respfileloc)==False:
         cmd='mkdir '+respfileloc
         os.system(cmd)
-    
+    comm.barrier()
+
     if rank == 0:
         client = fdsn.Client()
          #===============================================================================

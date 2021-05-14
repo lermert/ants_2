@@ -12,7 +12,7 @@ from ants_2.tools.treatment import ram_norm, whiten, cap, bandpass
 horizontals = ['RR', 'RT', 'TR', 'TT', 'TZ', 'ZT', 'RZ', 'ZR']
 import os, psutil
 from pympler import muppy, summary, tracker
-
+import gc
 
 class CorrBlock(object):
 
@@ -106,12 +106,17 @@ must be above lower corner frequency."
             windows = self.data.slide(win_len_seconds - self.delta, win_len_seconds - self.cfg.time_overlap,
                                       offset=(t - self.data[0].stats.starttime),
                                       include_partial_windows=False)
+
             if len(self.readtimes) == 0:
                 # no more new data
                 # reset t_end
                 # finish what is still available and then exit
                 t_end = max([w[0].stats.endtime for w in windows] + [0])
                 # if there are no windows in this window, zero is the endtime and we exit immediately 
+                # run the generator again new
+                windows = self.data.slide(win_len_seconds - self.delta, win_len_seconds - self.cfg.time_overlap,
+                                      offset=(t - self.data[0].stats.starttime),
+                                      include_partial_windows=False)
 
             for w in windows:
                 
@@ -203,7 +208,7 @@ must be above lower corner frequency."
                 break
 
             # check if there is a gap
-            while t < self.data[0].stats.starttime - self.cfg.time_overlap:
+            while t < self.data[0].stats.starttime:
                 t += self.cfg.time_window_length - self.cfg.time_overlap
                 print("jumping to t ", t)
             t_old = t
@@ -241,6 +246,12 @@ must be above lower corner frequency."
 
         if True in np.isinf(tr2.data):
             print("Trace contains inf\n", file=output_file)
+            return(False)
+
+        if len(np.where(tr1.data == 0)) > 0.1 * tr1.stats.npts:
+            return(False)
+
+        if len(np.where(tr2.data == 0)) > 0.1 * tr1.stats.npts:
             return(False)
 
         return(True)
@@ -310,6 +321,10 @@ must be above lower corner frequency."
         # mytracker.print_diff()
         # add a new round of data:
         #removallist = []
+        stream_temp = self.data.trim(starttime=t).copy()
+        self.data = Stream()
+        self.data += stream_temp
+        gc.collect()
         for ix_c, channel in enumerate(self.channels):
             mark_for_removal = 0
             while True:
@@ -337,7 +352,6 @@ must be above lower corner frequency."
                 except IndexError:
                     # No more data.
                     mark_for_removal = 1
-                    pass
         self.data._cleanup()
         self.data.sort(keys=["starttime"])
         self.data.trim(starttime=t)

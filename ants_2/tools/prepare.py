@@ -138,25 +138,26 @@ def pshift(data, verbose, ofid, perform_shift=True):
     for tr in data:
         # determine the shift
         #msec_off = tr.stats.starttime.timestamp % 1.e-6
-        print(tr.stats.starttime.timestamp, tr.stats.delta)
-        offset =  tr.stats.starttime.timestamp % tr.stats.delta
+        for ttr in tr.slide(3600., 3600., include_partial_windows=True, nearest_sample=False):
+            print(ttr.stats.starttime.timestamp, ttr.stats.delta)
+            offset =  ttr.stats.starttime.timestamp % ttr.stats.delta
 
-        if tr.stats.delta - offset <= eps:
-            continue
-        else:
-            if offset <= tr.stats.delta / 2.:
-                offset = -offset
+            if ttr.stats.delta - offset <= eps:
+                continue
             else:
-                offset = tr.stats.delta - offset
-            print("offset is ", offset, " s")
-            
-            if perform_shift:
-                freq = np.fft.rfftfreq(tr.stats.npts, tr.stats.sampling_rate)
-                spec = np.fft.rfft(tr.data)
-                spec *= np.exp(1j * 2. * np.pi * freq * offset)
-                tr.data = np.fft.irfft(spec)
-            tr.stats.starttime = tr.stats.starttime + offset
-            print("New starttime ", tr.stats.starttime)
+                if offset <= ttr.stats.delta / 2.:
+                    offset = -offset
+                else:
+                    offset = ttr.stats.delta - offset
+                print("offset is ", offset, " s")
+                
+                if perform_shift:
+                    freq = np.fft.rfftfreq(ttr.stats.npts, ttr.stats.sampling_rate)
+                    spec = np.fft.rfft(ttr.data)
+                    spec *= np.exp(1j * 2. * np.pi * freq * offset)
+                    ttr.data = np.fft.irfft(spec)
+                ttr.stats.starttime = ttr.stats.starttime + offset
+                print("New starttime ", ttr.stats.starttime)
     return data
 
 
