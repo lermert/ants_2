@@ -2,17 +2,22 @@ from glob import glob
 import h5py
 import os
 import numpy as np
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
 
 if not os.path.exists("data/correlations/cleaned"):
     os.mkdir("data/correlations/cleaned")
 
 corrs_in = glob("data/correlations/*.h5")
 
-for cin in corrs_in:
+for cin in corrs_in[rank::size]:
     print("cleaning up: ", cin)
     f = h5py.File(cin, "r")
     fnew = os.path.join("data/correlations/cleaned", os.path.basename(cin))
-    fnew = h5py.File(fnew, "a")
+    fnew = h5py.File(fnew, "w")
 
     sumcorrs = np.sum(f["corr_windows"]["data"][:], axis=-1)
     ixgood = np.where(sumcorrs != 0.0)
