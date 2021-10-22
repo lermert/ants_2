@@ -49,6 +49,7 @@ def preprocess(rank, size, comm):
                                 endtime=UTCDateTime(cfg.gcmt_end),
                                 catalog='GCMT',
                                 minmagnitude=cfg.gcmt_minmag)
+            cata.write("global_gcmt_forprocess.xml", format="QUAKEML")
 
             event_filter = get_event_filter(cata, cfg.Fs_new[-1],
                                             t0=UTCDateTime(cfg.gcmt_begin),
@@ -70,7 +71,8 @@ def preprocess(rank, size, comm):
                     latitude=cfg.event_exclude_local_cat_lat,
                     longitude=cfg.event_exclude_local_cat_lon,
                     maxradius=cfg.event_exclude_local_cat_radius))
-            print(len(local_cat),"events in local earthquake catalog.")
+            print(len(local_cat)," events in local earthquake catalog.")
+            local_cat.write("local_catalog_forprocess.xml", format="QUAKEML")
         # communicate event_filter (would it be better 
         # if every rank sets it up individually?)
         local_cat = comm.bcast(local_cat,root=0)

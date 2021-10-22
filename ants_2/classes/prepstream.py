@@ -102,8 +102,10 @@ class PrepStream(object):
         Fs = self.stream[0].stats.sampling_rate
         if Fs > cfg.Fs_new[-1]:
 
-            self.add_antialias(Fs,cfg.Fs_new[-1]*
+            self.add_antialias(Fs, cfg.Fs_new[-1]*
                 cfg.Fs_antialias_factor)
+            print("* Preparing antialias filter with a stop \
+band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
         
         if cfg.instr_correction or cfg.event_exclude_local_cat:
             self.add_inv(cfg.instr_correction_input,
