@@ -255,6 +255,8 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
         for quake_window in event_filter:
             self.stream.cutout(starttime=quake_window[0],
                                endtime=quake_window[1])
+            # apply a taper to all the new segments.
+            self.stream.taper(0.02)
 
         t_kept = 0.0
         for trace in self.stream:

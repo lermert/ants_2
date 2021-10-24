@@ -148,7 +148,7 @@ def cap(tr, cap_thresh):
             cap_trace(t, cap_thresh)
     #return tr
     
-def ram_norm_trace(tr,winlen,prefilt=None):
+def ram_norm_trace(tr, winlen, prefilt=None):
     
     trace_orig = tr.copy()
     hlen = int(winlen*tr.stats.sampling_rate/2.)

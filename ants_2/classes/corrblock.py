@@ -271,9 +271,13 @@ must be above lower corner frequency."
 
         # linear
         if self.cfg.bandpass is not None:
-            w_temp = sosfilt(self.sos, tr.data)
-            tr.data = sosfilt(self.sos, w_temp[::-1])[::-1]
-
+            try:
+                w_temp = sosfilt(self.sos, tr.data)
+                tr.data = sosfilt(self.sos, w_temp[::-1])[::-1]
+            except AttributeError:
+                for t in tr:
+                    w_temp = sosfilt(self.sos, t.data)
+                    t.data = sosfilt(self.sos, w_temp[::-1])[::-1]
         # non-linear
         if self.cfg.cap_glitch:
             cap(tr, self.cfg.cap_thresh)

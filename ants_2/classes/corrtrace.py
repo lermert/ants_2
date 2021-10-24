@@ -5,8 +5,12 @@ try:
     import h5py
 except ImportError:
     print('h5py cannot be used and if you set output="ASDF"\
-    or write_intermediate > 0, processing will fail.')
-import pyasdf
+or write_intermediate > 0, processing will fail.')
+try:
+    import pyasdf
+except ImportError:
+    print('pyasdf cannot be used and if you set output="ASDF"\
+, processing will fail.')
 import os
 import numpy as np
 from math import ceil

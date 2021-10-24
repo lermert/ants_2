@@ -11,7 +11,10 @@ from ants_2.classes.corrblock import CorrBlock
 from ants_2.tools.bookkeep import correlation_inventory
 from obspy import UTCDateTime
 from glob import glob
-import pyasdf
+try:
+    import pyasdf
+except ImportError:
+    print("pyASDF is not installed.")
 from copy import deepcopy
 # 'main':
 
