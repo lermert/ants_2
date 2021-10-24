@@ -173,6 +173,19 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
             teststream += self.stream[0].copy()
             testtitle.append('After detrend, filter, event exclusion')
 
+        if cfg.instr_correction:
+            if cfg.verbose:
+                print('* Remove response', file=self.ofid)
+            self.remove_response(
+                cfg.instr_correction_prefilt,
+                cfg.instr_correction_waterlevel,
+                cfg.instr_correction_unit,
+                cfg.verbose)
+        if cfg.testrun:
+            teststream += self.stream[0].copy()
+            testtitle.append('After instrument correction')
+            self.plot_test(teststream, testtitle)
+
         if Fs > cfg.Fs_new[-1]:
             if cfg.verbose:
                 print('* Downsample', file=self.ofid)
@@ -182,19 +195,6 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
             teststream += self.stream[0].copy()
             testtitle.append('After antialias, downsampling')
 
-        if cfg.instr_correction:
-            if cfg.verbose:
-                print('* Remove response', file=self.ofid)
-            self.remove_response(
-                cfg.instr_correction_prefilt,
-                cfg.instr_correction_waterlevel,
-                cfg.instr_correction_unit,
-                cfg.verbose)
-
-        if cfg.testrun:
-            teststream += self.stream[0].copy()
-            testtitle.append('After instrument correction')
-            self.plot_test(teststream, testtitle)
 
         self.check_nan_inf(cfg.verbose)
         self.stream._cleanup()
