@@ -61,6 +61,9 @@ class PrepStream(object):
         # - if asked, add an instr. response
         if cfg.verbose:
             print('* Merging stream', file=self.ofid)
+
+        for tr in self.stream:
+            tr.detrend("demean")
         self.stream = pp.merge_traces(self.stream, cfg.Fs_old, cfg.interpolation_samples_gap,
                                       maxgap=cfg.quality_maxgapsec)
 
@@ -244,9 +247,6 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
 
     def exclude_by_catalog(self, event_filter, minmag=5.6):
 
-        for tr in self.stream:
-            tr.detrend('demean')
-
         t_total = 0.0
         for trace in self.stream:
             t_total += trace.stats.npts
@@ -254,9 +254,6 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
         for quake_window in event_filter:
             self.stream.cutout(starttime=quake_window[0],
                                endtime=quake_window[1])
-            # apply a taper to all the new segments.
-            self.stream.taper(0.02)
-
         t_kept = 0.0
         for trace in self.stream:
             t_kept += trace.stats.npts
