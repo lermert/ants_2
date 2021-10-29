@@ -82,9 +82,9 @@ class PrepStream(object):
             return()
 
         if cfg.testrun:
-            # Retain only up to three, randomly selected parts of the stream
+            # Retain only up to ten, randomly selected parts of the stream
             sel_ind = np.random.randint(0, len(self.stream), 1)[0]
-            sel_up = min(sel_ind + 3, len(self.stream))
+            sel_up = min(sel_ind + 10, len(self.stream))
             self.stream = Stream(self.stream[sel_ind: sel_up])
 
         return()
@@ -116,7 +116,6 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
         if len(self.stream) == 0:
             return()
         
-
         if event_filter is not None:
             if cfg.verbose:
                 print('* Excluding events in GCMT catalog',file = self.ofid)
@@ -184,7 +183,6 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
         if cfg.testrun:
             teststream += self.stream[0].copy()
             testtitle.append('After instrument correction')
-            self.plot_test(teststream, testtitle)
 
         if Fs > cfg.Fs_new[-1]:
             if cfg.verbose:
@@ -194,6 +192,7 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
         if cfg.testrun:
             teststream += self.stream[0].copy()
             testtitle.append('After antialias, downsampling')
+            self.plot_test(teststream, testtitle)
 
 
         self.check_nan_inf(cfg.verbose)
