@@ -125,7 +125,7 @@ class CorrTrace(object):
             # create an array for the results
             self.nlag = self.sampling_rate * (2 * self.maxlag) + 1
             n_trace_max = (t1 - t0) / (self.window_length - self.overlap)
-            n_trace_max = int(ceil(n_trace_max) + 1)
+            n_trace_max = int(ceil(n_trace_max) + 1) + 600
             self.interm_data = self.corr_windows.create_dataset("data",
                                                                 shape=(n_trace_max, self.nlag),
                                                                 dtype=np.float)
@@ -222,11 +222,14 @@ class CorrTrace(object):
                 self.pstak = None
                 return(False)
 
-        self.interm_data[self.ix_d, :] = self.pstak
-        self.data_keys[self.ix_d] = tstr
-        self.ix_d += 1
-        self.pstak = None
-        
+        try:
+            self.interm_data[self.ix_d, :] = self.pstak
+            self.data_keys[self.ix_d] = tstr
+            self.ix_d += 1
+            self.pstak = None
+        except ValueError:
+            self.int_file.close()
+            return(False)
         # flush was not effective.
         # self.int_file.flush()
         # therefore: close and reopen to avoid memory leak

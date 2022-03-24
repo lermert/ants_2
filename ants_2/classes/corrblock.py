@@ -191,12 +191,13 @@ must be above lower corner frequency."
 
                         # add to stack
                         if len(correlation) == 2 * max_lag_samples + 1:
-                            self._correlations[cp_name]._add_corr(correlation,
+                            written = self._correlations[cp_name]._add_corr(correlation,
                                                                   tr1.stats.starttime)
                             del correlation
                         else:
                             print('Empty window.',
                                   file=output_file)
+
                 t += self.cfg.time_window_length - self.cfg.time_overlap
                     
             if t == t_old:

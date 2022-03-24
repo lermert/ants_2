@@ -101,34 +101,51 @@ def file_inventory(cfg):
     return(stations, data, readtimes)
 
 
-def station_pairs(staids,n,autocorr, only_autocorr=False):
-   
-    #staids = self.stations.keys()
+def station_pairs(staids, n, autocorr, only_autocorr=False, virtual_sources=[]):
+
     # sort alphabetically
     staids = list(staids) 
     staids.sort()
     blcks_stations = []
-    #blcks_channels = []
     idprs = []
 
     n_ids = len(staids)
     n_auto = 0 if autocorr else 1
-    #n_blk = cfg.n_stationpairs
 
-    for i in range(n_ids):
-        for j in range(i+n_auto,n_ids):
+    if len(virtual_sources) == 0:   # use all available stations as virtual source
 
-            if only_autocorr and i != j:
+        for i in range(n_ids):
+            for j in range(i+n_auto, n_ids):
+
+                if only_autocorr and i != j:
+                    continue
+
+                if len(idprs) == n:
+                    blcks_stations.append(idprs)
+                    idprs = []
+
+                idprs.append((staids[i],staids[j])
+
+    else:
+
+        for i in range(n_ids):
+            if staids[i] not in virtual_sources:
                 continue
 
-            if len(idprs) == n:
-                blcks_stations.append(idprs)
-                idprs = []
+            for j in range(i+n_auto, n_ids):
 
-            idprs.append((staids[i],staids[j]))
+                if only_autocorr and i != j:
+                    continue
 
-    if len(idprs) <= n:
-        blcks_stations.append(idprs)
+                if len(idprs) == n:
+                    blcks_stations.append(idprs)
+                    idprs = []
+
+                idprs.append((staids[i],staids[j])
+
+
+    # append the last block
+    blcks_stations.append(idprs)
 
 
     # idprs = []
@@ -237,7 +254,8 @@ class correlation_inventory(object):
         # - Determine station pairs
         # - station pairs are grouped into blocks
         self.station_blocks = station_pairs(all_stations,
-            cfg.n_stationpairs, cfg.corr_autocorr, cfg.corr_only_autocorr)
+            cfg.n_stationpairs, cfg.corr_autocorr, cfg.corr_only_autocorr,
+            cfg.corr_virtualsources)
 
 
         self.blocks = []

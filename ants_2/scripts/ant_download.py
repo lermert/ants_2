@@ -154,7 +154,8 @@ def ant_download(rank, size, comm):
                     elif cfg.data_center == 'arclink' or cfg.data_center=='any': 
                         os.system(reqstring_arclink)
                     elif cfg.data_center == "scedc":
-                        os.system("bash fdata_scedc.sh " + reqstring_scedc)
+                        os.system("export PATH=\"" + _ROOT + "/tools_ext:$PATH\"")
+                        os.system("bash " + os.path.join(_ROOT, "tools_ext", "fdata_scedc.sh " + reqstring_scedc))
                 t += winlen
         
         tstart = UTCDateTime(t1).strftime('%Y-%m-%d')
@@ -183,7 +184,8 @@ def ant_download(rank, size, comm):
             os.system(reqstring_resp_arclink)
         elif cfg.data_center == "scedc":
             try:
-                os.system("bash fdata_scedc.sh " + reqstring_resp_iris)
+                os.system("export PATH=\"" + _ROOT + "/tools_ext:$PATH\"")
+                os.system("bash " + os.path.join(_ROOT, "tools_ext", "fdata_scedc.sh"  + reqstring_resp_iris))
             except:
                 print("no metadata")
                 pass

@@ -203,6 +203,7 @@ DEFAULT_Correlation = {
     "corr_normalize": True,
     "interm_stack": 0,
     "corr_tensorcomponents": ["ZZ"],
+    "corr_virtualsources": [],
     "n_stationpairs": 1,
     "input_format": "MSEED",
     "format_output": "SAC",
@@ -245,6 +246,7 @@ class ConfigCorrelation(object):
         self.corr_autocorr = None
         self.corr_only_autocorr = None
         self.corr_normalize = None
+        self.corr_virtualsources = None
         self.format_output = None
         self.input_format = None
         self.n_stationpairs = None
