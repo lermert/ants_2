@@ -110,7 +110,7 @@ def preprocess(rank, size, comm):
     # select input files for this rank    
     content = content[rank::size]
     if cfg.testrun: # Only 3 files randomly selected
-        indices = randint(0,len(content),3)
+        indices = randint(0,len(content),10)
         content = [content[j] for j in indices]
 
     # Loop over input files

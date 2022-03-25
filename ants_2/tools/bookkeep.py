@@ -124,7 +124,7 @@ def station_pairs(staids, n, autocorr, only_autocorr=False, virtual_sources=[]):
                     blcks_stations.append(idprs)
                     idprs = []
 
-                idprs.append((staids[i],staids[j])
+                idprs.append((staids[i],staids[j]))
 
     else:
 
@@ -141,7 +141,7 @@ def station_pairs(staids, n, autocorr, only_autocorr=False, virtual_sources=[]):
                     blcks_stations.append(idprs)
                     idprs = []
 
-                idprs.append((staids[i],staids[j])
+                idprs.append((staids[i],staids[j]))
 
 
     # append the last block
