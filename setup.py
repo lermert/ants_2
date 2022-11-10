@@ -21,12 +21,12 @@ setup(
     keywords = 'Ambient seismic noise',
     packages = find_packages(),
     #package_data = ,
-    install_requires = [
-        "obspy>=1.0.1",
-        "geographiclib",
-        "click",
-        "h5py",
-        "mpi4py>=2.0.0"],
+    #install_requires = [
+    #    "obspy>=1.0.1",
+    #    "geographiclib",
+    #    "click",
+    #    "h5py",
+    #    "mpi4py>=2.0.0"],
     
     # ToDo: Add entry points for test suite
     entry_points = {

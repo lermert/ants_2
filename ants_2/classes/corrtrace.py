@@ -129,10 +129,10 @@ class CorrTrace(object):
             self.interm_data = self.corr_windows.create_dataset("data",
                                                                 shape=(n_trace_max, self.nlag),
                                                                 dtype=np.float)
-            dtp = h5py.string_dtype()
+            # dtp = h5py.string_dtype()
             self.data_keys = self.corr_windows.create_dataset("timestamps",
                                                               shape=(n_trace_max,),
-                                                              dtype=dtp)
+                                                              dtype=np.float)
             self.ix_d = 0
 
         else:
@@ -207,7 +207,8 @@ class CorrTrace(object):
 
     def write_int(self, t):
 
-        tstr = t.strftime("%Y.%j.%H.%M.%S")
+        #tstr = t.strftime("%Y.%j.%H.%M.%S")
+        tstmp = t.timestamp
         #print(self.int_file)
         #print(tstr)
         #if tstr not in self.interm_data.keys():
@@ -218,13 +219,13 @@ class CorrTrace(object):
             try:
                 assert self.pstak.max() == pytest.approx(1.0, 1.e-3)
             except AssertionError:
-                print("No write for ", self.id, tstr, self.pstak.max(), end="\n")
+                print("No write for ", self.id, tstmp, self.pstak.max(), end="\n")
                 self.pstak = None
                 return(False)
 
         try:
             self.interm_data[self.ix_d, :] = self.pstak
-            self.data_keys[self.ix_d] = tstr
+            self.data_keys[self.ix_d] = tstmp
             self.ix_d += 1
             self.pstak = None
         except ValueError:

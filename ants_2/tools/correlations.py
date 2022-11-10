@@ -1,7 +1,7 @@
 
 import numpy as np
 from math import sqrt, isnan
-from obspy.signal.cross_correlation import xcorr
+#from obspy.signal.cross_correlation import xcorr
 from scipy.signal import hilbert, correlate
 from scipy.fftpack import next_fast_len
 import warnings
@@ -28,12 +28,12 @@ def running_mean(x, N):
     return ma
 
 
-def obspy_xcorr(trace1, trace2, max_lag_samples):
+# def obspy_xcorr(trace1, trace2, max_lag_samples):
 
-    x_corr = xcorr(trace1.data, trace2.data,
-                   max_lag_samples, True)[2]
+#     x_corr = xcorr(trace1.data, trace2.data,
+#                    max_lag_samples, True)[2]
 
-    return x_corr
+#     return x_corr
 
 
 def get_correlation_params(data1, data2):

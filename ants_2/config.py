@@ -1,7 +1,6 @@
 import io
 import json
 import os
-import click
 from obspy import UTCDateTime
 
 DEFAULT_Download = {
@@ -345,9 +344,6 @@ class ConfigCorrelation(object):
                 msg = '\'ram_prefilt\' in config_correlation.json must be [freqmin, freqmax,order]'
                 raise ValueError(msg)
 
-
-
-
     # bools
     # bool
 
@@ -487,5 +483,3 @@ class ConfigCorrelation(object):
         if not isinstance(self.white_taper_samples,int):
             msg = '\'white_taper_samples\' in config_correlation.json must be integer.'
             raise ValueError(msg)
-
-

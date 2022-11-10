@@ -167,6 +167,16 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
             if cfg.verbose:
                 print('* Taper', file=self.ofid)
             self.taper(cfg.wins_taper_type, cfg.wins_taper)
+        
+        if cfg.wins_detrend:
+            if cfg.verbose:
+                print('* Detrend', file=self.ofid)
+            self.detrend()
+
+        if cfg.wins_demean:
+            if cfg.verbose:
+                print('* Demean', file=self.ofid)
+            self.demean()
 
         if cfg.wins_filter is not None:
                 self.filter(cfg.wins_filter)
@@ -196,6 +206,11 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
             teststream += self.stream[0].copy()
             testtitle.append('After antialias, downsampling')
             self.plot_test(teststream, testtitle)
+    
+        if cfg.wins_taper is not None:
+            if cfg.verbose:
+                print('* Taper', file=self.ofid)
+            self.taper(cfg.wins_taper_type, cfg.wins_taper)
 
 
         self.check_nan_inf(cfg.verbose)
