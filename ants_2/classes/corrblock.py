@@ -128,6 +128,8 @@ must be above lower corner frequency."
                     if w[0].stats.starttime > self.readtimes[0]:
                         # if so, leave the loop, update the data, and restart.
                         break
+                
+                if True in [wl < self.cfg.time_window_length for wl in [wwl.stats.delta * wwl.stats.npts for wwl in w]]: break
 
                 print(w)
                 # Apply preprocessing
@@ -141,7 +143,7 @@ must be above lower corner frequency."
                     [net2, sta2] = pair[1].split('.')
                     str1 = w.select(network=net1, station=sta1)
                     str2 = w.select(network=net2, station=sta2)
-
+                     
 
                     # - if horizontal components are involved, copy and rotate
                     if any([i in self.cfg.corr_tensorcomponents
@@ -360,6 +362,7 @@ must be above lower corner frequency."
                 except IndexError:
                     # No more data.
                     mark_for_removal = 1
+        self.data.merge(method=1, interpolation_samples=0, fill_value=0)
         self.data._cleanup()
         self.data.sort(keys=["starttime"])
         self.data.trim(starttime=t)

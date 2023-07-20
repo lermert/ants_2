@@ -74,7 +74,7 @@ def file_inventory(cfg):
         fn = os.path.basename(f).split('.')
         st = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[4:9]))
         et = UTCDateTime('{}-{}T{}:{}:{}'.format(*fn[9:14]))
-       
+        print(st, et, f) 
         if st > t1 or et < t0:
             print("Data outside of chosen time range...")
             continue
