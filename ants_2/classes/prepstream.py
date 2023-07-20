@@ -168,18 +168,18 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
                 print('* Taper', file=self.ofid)
             self.taper(cfg.wins_taper_type, cfg.wins_taper)
         
-        if cfg.wins_detrend:
-            if cfg.verbose:
-                print('* Detrend', file=self.ofid)
-            self.detrend()
+        #if cfg.wins_detrend:
+        #    if cfg.verbose:
+        #        print('* Detrend', file=self.ofid)
+        #    self.detrend()
 
-        if cfg.wins_demean:
-            if cfg.verbose:
-                print('* Demean', file=self.ofid)
-            self.demean()
+        #if cfg.wins_demean:
+        #    if cfg.verbose:
+        #        print('* Demean', file=self.ofid)
+        #    self.demean()
 
-        if cfg.wins_filter is not None:
-                self.filter(cfg.wins_filter)
+        #if cfg.wins_filter is not None:
+        #        self.filter(cfg.wins_filter)
 
         if cfg.testrun:
             teststream += self.stream[0].copy()
@@ -192,7 +192,8 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
                 cfg.instr_correction_prefilt,
                 cfg.instr_correction_waterlevel,
                 cfg.instr_correction_unit,
-                cfg.verbose)
+                taper_fraction=cfg.wins_taper,
+                verbose=cfg.verbose)
         if cfg.testrun:
             teststream += self.stream[0].copy()
             testtitle.append('After instrument correction')
@@ -468,7 +469,7 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
                     print('* interpolated trace to %g Hz' % Fs,
                           file=self.ofid)
 
-    def remove_response(self, pre_filt, waterlevel, unit, verbose):
+    def remove_response(self, pre_filt, waterlevel, unit, taper_fraction, verbose):
 
         if isinstance(self.inv, dict):
             for trace in self.stream:
@@ -480,7 +481,8 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
                                seedresp=inv,
                                sacsim=True,
                                pitsasim=False,
-                               water_level=waterlevel)
+                               water_level=waterlevel,
+                               taper_fraction=taper_fraction)
                 print(trace.data.max())
                 print('*' * 20)
             if verbose:
@@ -492,7 +494,8 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
             self.stream.remove_response(inventory=self.inv,
                                         pre_filt=pre_filt,
                                         water_level=waterlevel,
-                                        output=unit)
+                                        output=unit,
+                                        taper_fraction=taper_fraction)
             if verbose:
                 print('* removed instrument response using stationxml inv',
                       file=self.ofid)

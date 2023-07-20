@@ -26,7 +26,7 @@ subparsers = parser.add_subparsers()
 #==============================================================================
 # Setup of the directory structure
 #==============================================================================
-def new_project():
+def new_project(args, comm, size, rank):
     if not os.listdir('.')==[]:
         print('Project exists already, can only start in an empty directory.')
         exit()
@@ -54,7 +54,7 @@ def new_project():
     config = ConfigCorrelation()
     config.initialize(check_params=False)
     
-    print('All the input files were copied to ./input, please edit!',color='g')
+    print('All the input files were copied to ./input, please edit!')
 parser_setup_project = subparsers.add_parser("new-project",
                                              help='Initialize folder for a new project.')
 parser_setup_project.set_defaults(func=new_project)
