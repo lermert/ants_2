@@ -165,7 +165,10 @@ must be above lower corner frequency."
                             tr1 = str1.select(location=loc1, channel=cha1)[0]
                             tr2 = str2.select(location=loc2, channel=cha2)[0]
                         except IndexError:
-                            print("Channel not found", file=output_file)
+                            print("Channel not found, current streams: ", file=output_file)
+                            print(str1, str2)
+                            print(" channels needed: " + cha1 + "," + cha2,
+                                  file=output_file)
                             continue
 
                         # - check minimum length requirement

@@ -143,7 +143,7 @@ band frequency of {} Hz".format(cfg.Fs_new[-1] * cfg.Fs_antialias_factor))
             # This is run twice
             self.event_exclude(cfg)
             self.event_exclude(cfg)
-            if len(self.stream) == 0:
+        if len(self.stream) == 0:
                 return()
 
         if cfg.wins:
