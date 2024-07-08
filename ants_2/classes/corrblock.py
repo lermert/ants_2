@@ -358,6 +358,7 @@ must be above lower corner frequency."
                     # No more data.
                     mark_for_removal = 1
         self.data._cleanup()
+        self.data.merge(method=1, fill_value=0.0)
         self.data.sort(keys=["starttime"])
         self.data.trim(starttime=t)
         return()
