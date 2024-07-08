@@ -216,7 +216,10 @@ class CorrTrace(object):
             #self.interm_data.create_dataset(tstr, shape=self.pstak.shape, dtype=self.pstak.dtype)
             #self.interm_data[tstr][:] = self.pstak
         if self.id.split("--")[0] == self.id.split("--")[1] and self.corr_type == "pcc":
+<<<<<<< HEAD
             print(self.id)
+=======
+>>>>>>> 15b12ef3f371fcd02980c43685db3293cb2257d7
             try:
                 assert self.pstak.max() == pytest.approx(1.0, 1.e-3)
             except AssertionError:
