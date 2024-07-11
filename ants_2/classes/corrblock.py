@@ -129,7 +129,7 @@ must be above lower corner frequency."
                         # if so, leave the loop, update the data, and restart.
                         break
                 
-                if True in [wl < self.cfg.time_window_length for wl in [wwl.stats.delta * wwl.stats.npts for wwl in w]]: break
+                if True in [wl < self.cfg.time_min_window for wl in [wwl.stats.delta * wwl.stats.npts for wwl in w]]: break
 
                 # print(w)
                 # Apply preprocessing
