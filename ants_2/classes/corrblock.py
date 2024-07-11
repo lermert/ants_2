@@ -95,7 +95,7 @@ must be above lower corner frequency."
 
         # mytracker = tracker.SummaryTracker()
         while t < t_end:
-            print(t, file=output_file, end="\n")
+            # print(t, file=output_file, end="\n")
             #print("Memory usage in Gb loop begin ", process.memory_info().rss / 1.e9, 
             #      file=output_file, end="\n")
             if self.channels == []:
@@ -119,7 +119,7 @@ must be above lower corner frequency."
                                       include_partial_windows=False)
 
             for w in windows:
-                
+                print("W start :", [ww.stats.starttime for ww in w])
                 if w[0].stats.endtime > t_end:
                     break
 
@@ -131,7 +131,7 @@ must be above lower corner frequency."
                 
                 if True in [wl < self.cfg.time_window_length for wl in [wwl.stats.delta * wwl.stats.npts for wwl in w]]: break
 
-                print(w)
+                # print(w)
                 # Apply preprocessing
                 w = self.preprocess(w)
                 # may return a deepcopy if non-linear processing is applied.
@@ -208,13 +208,17 @@ must be above lower corner frequency."
             if t == t_old:
                 t += self.cfg.time_window_length - self.cfg.time_overlap
 
-            print("Trying update at time ", t)
+            #print("Trying update at time ", t)
             self.update_data(t)
             if len(self.data) == 0:
                 break
 
             # check if there is a gap
             while t < self.data[0].stats.starttime:
+                # acceptable gap? ignore
+                if self.data[0].stats.starttime - t < (self.cfg.time_window_length - self.cfg.time_min_window):
+                    break
+                # too long gap? jump ahead
                 t += self.cfg.time_window_length - self.cfg.time_overlap
                 print("jumping to t ", t)
             t_old = t
@@ -352,7 +356,7 @@ must be above lower corner frequency."
                 try:
                     f = self.inv[channel].pop(0)
                     m_and_ms = self.readtimes.pop(0)
-                    print("Updated past ", m_and_ms, "  ", f)
+                    print("Updated at ", m_and_ms, "  ", f)
                     try:
                         self.data += read(f)
                         print("read trace to ", self.data[-1].stats.endtime)
@@ -362,11 +366,10 @@ must be above lower corner frequency."
                 except IndexError:
                     # No more data.
                     mark_for_removal = 1
-        self.data.merge(method=1, interpolation_samples=0, fill_value=0)
-        self.data._cleanup()
-        self.data.merge(method=1, fill_value=0.0)
+        self.data.merge(method=1, fill_value=0.0, interpolation_samples=0)
         self.data.sort(keys=["starttime"])
         self.data.trim(starttime=t)
+        print(t)
         return()
 
     def initialize_data(self, t0):
