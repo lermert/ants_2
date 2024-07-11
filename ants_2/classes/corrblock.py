@@ -105,7 +105,7 @@ must be above lower corner frequency."
 
             windows = self.data.slide(win_len_seconds - self.delta, win_len_seconds - self.cfg.time_overlap,
                                       offset=(t - self.data[0].stats.starttime),
-                                      include_partial_windows=False)
+                                      include_partial_windows=True, nearest_sample=True)
 
             if len(self.readtimes) == 0:
                 # no more new data
@@ -116,7 +116,7 @@ must be above lower corner frequency."
                 # run the generator again new
                 windows = self.data.slide(win_len_seconds - self.delta, win_len_seconds - self.cfg.time_overlap,
                                       offset=(t - self.data[0].stats.starttime),
-                                      include_partial_windows=False)
+                                      include_partial_windows=True, nearest_sample=True)
 
             for w in windows:
                 print("W start :", [ww.stats.starttime for ww in w])
@@ -196,8 +196,10 @@ must be above lower corner frequency."
 
                         # add to stack
                         if len(correlation) == 2 * max_lag_samples + 1:
+                            actual_window_length = tr1.stats.delta * tr1.stats.npts
                             written = self._correlations[cp_name]._add_corr(correlation,
-                                                                  tr1.stats.starttime)
+                                                                  tr1.stats.starttime,
+                                                                  actual_window_length)
                             del correlation
                         else:
                             print('Empty window.',
@@ -375,7 +377,7 @@ must be above lower corner frequency."
     def initialize_data(self, t0):
         # t0: begin time of observation
         # have at least one window in each channel
-        t_min = t0 + self.cfg.time_window_length# - self.cfg.time_overlap
+        t_min = t0
         self.data = Stream()
 
         for channel in self.channels:

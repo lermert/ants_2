@@ -133,13 +133,16 @@ class CorrTrace(object):
             self.data_keys = self.corr_windows.create_dataset("timestamps",
                                                               shape=(n_trace_max,),
                                                               dtype=np.float)
+            self.win_lens = self.corr_windows.create_dataset("window_length",
+                                                             shape=(n_trace_max,),
+                                                             dtype=np.float)
             self.ix_d = 0
 
         else:
             self.int_file = None
             self.interm_data = None
 
-    def _add_corr(self, corr, t):
+    def _add_corr(self, corr, t, wl):
 
         """
         Add one correlation window to the stack
@@ -166,7 +169,7 @@ class CorrTrace(object):
 
             if self.cnt_int == self.stck_int:
                 # write intermediate result
-                written = self.write_int(t)
+                written = self.write_int(t, wl)
                 self.cnt_int = 0
 
         # self.mytracker.print_diff()
@@ -205,7 +208,7 @@ class CorrTrace(object):
         if self.int_file is not None:
             self.int_file.file.close()
 
-    def write_int(self, t):
+    def write_int(self, t, wl):
 
         #tstr = t.strftime("%Y.%j.%H.%M.%S")
         tstmp = t.timestamp
@@ -226,6 +229,7 @@ class CorrTrace(object):
         try:
             self.interm_data[self.ix_d, :] = self.pstak
             self.data_keys[self.ix_d] = tstmp
+            self.win_lens[self.ix_d] = wl
             self.ix_d += 1
             self.pstak = None
         except ValueError:
@@ -241,6 +245,7 @@ class CorrTrace(object):
         self.int_file = h5py.File(int_file, "a")
         self.interm_data = self.int_file["corr_windows"]["data"]
         self.data_keys = self.int_file["corr_windows"]["timestamps"]
+        self.win_lens = self.int_file["corr_windows"]["window_length"]
 
         return(True)
 
