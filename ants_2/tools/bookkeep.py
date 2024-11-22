@@ -174,6 +174,7 @@ def channel_pairs(channels1,channels2,cfg):
             
             if cfg.update:
                 f = name_correlation_file(c1,c2,cfg.corr_type)
+                print(f"Correlation file {f} exists, continuing.")
                 f = os.path.join('data','correlations',f)
                 if os.path.exists(f):
                     continue

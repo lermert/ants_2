@@ -3,7 +3,7 @@ import numpy as np
 from math import sqrt, isnan
 #from obspy.signal.cross_correlation import xcorr
 from scipy.signal import hilbert, correlate
-from scipy.fftpack import next_fast_len
+from scipy.fftpack import next_fast_len, fft, ifft
 import warnings
 
 
@@ -15,6 +15,30 @@ def my_centered(arr, newsize):
         i0 += 1
     i1 = i0 + newsize
     return arr[i0:i1]
+
+
+
+def deconv_waterlevel(trace1, trace2, waterlevel=0.05):
+    """
+    Frequency-domain deconvolution using waterlevel method.
+    From Tom Richter
+
+    
+    :return: array after deconvolution
+    """
+    N = len(trace1)
+    nfft = next_fast_len(N)
+
+    spec_src = fft(trace2, nfft)
+    spec_src_conj = np.conjugate(spec_src)
+    spec_src_water = np.abs(spec_src * spec_src_conj)
+    spec_src_water = np.maximum(
+        spec_src_water, max(spec_src_water) * waterlevel)
+
+    out = ifft(fft(trace1, nfft) * spec_src_conj / spec_src_water,
+                    nfft)[:N]
+    
+    return(np.real(out))
 
 
 def running_mean(x, N):
