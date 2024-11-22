@@ -18,27 +18,30 @@ def my_centered(arr, newsize):
 
 
 
-def deconv_waterlevel(trace1, trace2, max_lag_samples, waterlevel=0.05):
+def deconv_waterlevel(trace1, trace2, sampling_rate=1.,
+    shift=0, waterlevel=0.05):
     """
     Frequency-domain deconvolution using waterlevel method.
     From Tom Richter
 
     
-    :return: array after deconvolution
+    :return: (list of) array(s) with deconvolution(s)
     """
     N = len(trace1)
-    nfft = next_fast_len(N)
+    nfft = next_fast_len(10*N)
+    freq = np.fft.fftfreq(nfft, d=1./sampling_rate)
+    f = np.exp(-2j * np.pi * freq * shift)
 
     spec_src = fft(trace2, nfft)
     spec_src_conj = np.conjugate(spec_src)
     spec_src_water = np.abs(spec_src * spec_src_conj)
+    # spec_src_water = smooth(spec_src_water, 10)
     spec_src_water = np.maximum(
         spec_src_water, max(spec_src_water) * waterlevel)
+    out = ifft(f * fft(trace1, nfft) * spec_src_conj / spec_src_water)
+    out = np.concatenate([out[-N//2:].copy(), out[:N//2].copy()])
 
-    out = ifft(fft(trace1, nfft) * spec_src_conj / spec_src_water,
-                    nfft)[:N]
-    
-    return(my_centered(np.real(out), 2. * max_lag_samples + 1))
+    return(np.real(out))
 
 
 def running_mean(x, N):
