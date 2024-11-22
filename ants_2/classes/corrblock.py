@@ -6,7 +6,7 @@ import re
 
 from ants_2.tools.util import get_geoinf
 from ants_2.classes.corrtrace import CorrTrace
-from ants_2.tools.correlations import cross_covar, interference, pcc_2, deconv
+from ants_2.tools.correlations import cross_covar, interference, pcc_2, deconv_waterlevel
 from ants_2.tools.treatment import ram_norm, whiten, cap, bandpass
 # list of possible channels combinations
 horizontals = ['RR', 'RT', 'TR', 'TT', 'TZ', 'ZT', 'RZ', 'ZR']
@@ -192,7 +192,8 @@ must be above lower corner frequency."
                             correlation = pcc_2(tr1.data, tr2.data,
                                                 max_lag_samples)[0]
                         elif self.cfg.corr_type == "dcv":
-                            correlation = deconv(tr1.data, tr2.data, max_lag_samples)[0]
+                            correlation = deconv_waterlevel(tr1.data, tr2.data)
+                            
 
                         # add to stack
                         if len(correlation) == 2 * max_lag_samples + 1:
