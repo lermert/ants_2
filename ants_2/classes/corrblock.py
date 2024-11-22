@@ -192,8 +192,9 @@ must be above lower corner frequency."
                             correlation = pcc_2(tr1.data, tr2.data,
                                                 max_lag_samples)[0]
                         elif self.cfg.corr_type == "dcv":
-                            correlation = deconv_waterlevel(tr1.data, tr2.data)
-                            
+                            correlation = deconv_waterlevel(tr1.data, tr2.data,
+                                max_lag_samples)
+
 
                         # add to stack
                         if len(correlation) == 2 * max_lag_samples + 1:

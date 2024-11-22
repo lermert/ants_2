@@ -18,7 +18,7 @@ def my_centered(arr, newsize):
 
 
 
-def deconv_waterlevel(trace1, trace2, waterlevel=0.05):
+def deconv_waterlevel(trace1, trace2, max_lag_samples, waterlevel=0.05):
     """
     Frequency-domain deconvolution using waterlevel method.
     From Tom Richter
@@ -38,7 +38,7 @@ def deconv_waterlevel(trace1, trace2, waterlevel=0.05):
     out = ifft(fft(trace1, nfft) * spec_src_conj / spec_src_water,
                     nfft)[:N]
     
-    return(np.real(out))
+    return(my_centered(np.real(out), 2. * max_lag_samples + 1))
 
 
 def running_mean(x, N):
