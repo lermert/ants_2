@@ -239,6 +239,7 @@ class ConfigCorrelation(object):
         self.time_overlap = None
         self.time_window_length = None
         self.time_min_window = None
+        self.max_gap_percent_of_window = None
         self.corr_type = None
         self.corr_maxlag = None
         self.corr_tensorcomponents = None
@@ -434,7 +435,13 @@ class ConfigCorrelation(object):
         if not isinstance(self.corr_maxlag,float):
             if not isinstance(self.corr_maxlag,int):
                 
-                msg = '\'corr_maxlag\' in config_correlation.json must be a number.'
+                msg = '\'corr_maxlag\' in config_correlation.json must be int or float.'
+                raise ValueError(msg)
+
+        if not isinstance(self.max_gap_percent_of_window,float):
+            if not isinstance(self.max_gap_percent_of_window,int):
+                
+                msg = '\'max_gap_percent_of_window\' in config_correlation.json must be int or float.'
                 raise ValueError(msg)
 
         if not isinstance(self.white_freqmin,float):

@@ -226,15 +226,23 @@ class CorrTrace(object):
                 self.pstak = None
                 return(False)
 
-        try:
-            self.interm_data[self.ix_d, :] = self.pstak
-            self.data_keys[self.ix_d] = tstmp
-            self.win_lens[self.ix_d] = wl
-            self.ix_d += 1
-            self.pstak = None
-        except ValueError:
-            self.int_file.close()
-            return(False)
+        if tstmp not in self.data_keys:
+            try:
+                self.interm_data[self.ix_d, :] = self.pstak
+                self.data_keys[self.ix_d] = tstmp
+                self.win_lens[self.ix_d] = wl
+                self.ix_d += 1
+                self.pstak = None
+            except ValueError:
+                self.int_file.close()
+                int_file = os.path.join('data', 'correlations',
+                                '{}.{}.windows.h5'.format(self.id,
+                                                          self.corr_type))
+                self.int_file = h5py.File(int_file, "a")
+                self.interm_data = self.int_file["corr_windows"]["data"]
+                self.data_keys = self.int_file["corr_windows"]["timestamps"]
+                self.win_lens = self.int_file["corr_windows"]["window_length"]
+                return(False)
         # flush was not effective.
         # self.int_file.flush()
         # therefore: close and reopen to avoid memory leak
