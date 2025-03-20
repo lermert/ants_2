@@ -1,3 +1,4 @@
+
 # Correlation block object:
 from obspy import Stream, UTCDateTime, read
 from scipy.signal import sosfilt
@@ -27,7 +28,8 @@ class CorrBlock(object):
         self.station_pairs = block.station_pairs
         self.channel_pairs = block.channel_pairs
         t0 = UTCDateTime(self.cfg.time_begin)
-        self.t0 = self.initialize_data(t0)
+        self.initialize_data_new(t0)
+        self.t0 = t0
         self.sampling_rate = self.data[0].stats.sampling_rate
         self.delta = self.data[0].stats.delta
         if self.cfg.bandpass is not None:
@@ -36,9 +38,7 @@ class CorrBlock(object):
             if fmax > 0.5 * self.sampling_rate:
                 raise ValueError("Upper filter freq above Nyquist.")
             if fmax <= fmin:
-
-                msg = "Bandpass upper corner frequency\
-must be above lower corner frequency."
+                msg = "Bandpass upper corner frequency must be above lower corner frequency."
                 raise ValueError(msg)
 
             order = self.cfg.bandpass[2]
@@ -59,7 +59,7 @@ must be above lower corner frequency."
                               window_length=cfg.time_window_length,
                               corr_type=cfg.corr_type, maxlag=cfg.corr_maxlag,
                               t0=self.t0,
-                              t1=UTCDateTime(self.cfg.time_end),
+                              t1=UTCDateTime(cfg.time_end),
                               overlap=cfg.time_overlap, corr_params=None,
                               rotate=cfg.rotate)
 
@@ -82,19 +82,21 @@ must be above lower corner frequency."
         print('Working on station pairs:')
         for sta in self.station_pairs:
             print("{}--{}".format(sta[0], sta[1]))
-        t_0 = self.t0
+        
         t_end = UTCDateTime(self.cfg.time_end)
         win_len_seconds = self.cfg.time_window_length
-        min_len_samples = int(round(self.cfg.time_min_window *
-                                    self.sampling_rate))
+        # min_len_samples = int(round(self.cfg.time_min_window * self.sampling_rate))
         max_lag_samples = int(round(self.cfg.corr_maxlag * self.sampling_rate))
 
         # Time loop
-        t = t_0
-        t_old = t_0
+        # running time:
+        self.t = self.t0
+        # previous time:
+        t_old = self.t0
+
 
         # mytracker = tracker.SummaryTracker()
-        while t < t_end:
+        while self.t < t_end:
             # print(t, file=output_file, end="\n")
             #print("Memory usage in Gb loop begin ", process.memory_info().rss / 1.e9, 
             #      file=output_file, end="\n")
@@ -103,35 +105,16 @@ must be above lower corner frequency."
             if len(self.data) == 0:
                 break
 
+            # slide
+            # the offset is so that we stay on a fixed time stepping
             windows = self.data.slide(win_len_seconds - self.delta, win_len_seconds - self.cfg.time_overlap,
-                                      offset=(t - self.data[0].stats.starttime),
-                                      include_partial_windows=True, nearest_sample=True)
-
-            if len(self.readtimes) == 0:
-                # no more new data
-                # reset t_end
-                # finish what is still available and then exit
-                t_end = max([w[0].stats.endtime for w in windows] + [0])
-                # if there are no windows in this window, zero is the endtime and we exit immediately 
-                # run the generator again new
-                windows = self.data.slide(win_len_seconds - self.delta, win_len_seconds - self.cfg.time_overlap,
-                                      offset=(t - self.data[0].stats.starttime),
-                                      include_partial_windows=True, nearest_sample=True)
+                                      offset=0,
+                                      include_partial_windows=False, nearest_sample=True)
 
             for w in windows:
-                print("W start :", [ww.stats.starttime for ww in w])
-                if w[0].stats.endtime > t_end:
+                if w[0].stats.starttime > t_end:
                     break
 
-                if len(self.readtimes) > 0:
-                    # check if we have passed a point of time where a new data file needs to be added
-                    if w[0].stats.starttime > self.readtimes[0]:
-                        # if so, leave the loop, update the data, and restart.
-                        break
-                
-                if True in [wl < self.cfg.time_min_window for wl in [wwl.stats.delta * wwl.stats.npts for wwl in w]]: break
-
-                # print(w)
                 # Apply preprocessing
                 w = self.preprocess(w)
                 # may return a deepcopy if non-linear processing is applied.
@@ -207,25 +190,26 @@ must be above lower corner frequency."
                             print('Empty window.',
                                   file=output_file)
 
-                t += self.cfg.time_window_length - self.cfg.time_overlap
+                self.t += self.cfg.time_window_length - self.cfg.time_overlap
                     
-            if t == t_old:
-                t += self.cfg.time_window_length - self.cfg.time_overlap
+            if self.t == t_old:
+                self.t += self.cfg.time_window_length - self.cfg.time_overlap
 
             #print("Trying update at time ", t)
-            self.update_data(t)
+            self.update_data()
             if len(self.data) == 0:
                 break
 
             # check if there is a gap
-            while t < self.data[0].stats.starttime:
+            while self.t < self.data[0].stats.starttime:
                 # acceptable gap? ignore
-                if self.data[0].stats.starttime - t < (self.cfg.time_window_length - self.cfg.time_min_window):
-                    break
+                #if self.data[0].stats.starttime - self.t < (self.cfg.time_window_length - self.cfg.time_min_window):
+                #    break
                 # too long gap? jump ahead
-                t += self.cfg.time_window_length - self.cfg.time_overlap
-                print("jumping to t ", t)
-            t_old = t
+                # now jump ahead (no more partial windows)
+                self.t += self.cfg.time_window_length - self.cfg.time_overlap
+                print("jumping to t ", self.t)
+            t_old = self.t
         # - Write results
         for corr in self._correlations.values():
             corr.write_stack(output_format=self.cfg.format_output)
@@ -334,12 +318,12 @@ must be above lower corner frequency."
         return(s_temp1, s_temp2)
 
     # debugging @profile
-    def update_data(self, t):
+    def update_data(self):
         # mytracker = tracker.SummaryTracker()
         # mytracker.print_diff()
         # add a new round of data:
         #removallist = []
-        stream_temp = self.data.trim(starttime=t).copy()
+        stream_temp = self.data.trim(starttime=self.t).copy()
         self.data = Stream()
         self.data += stream_temp
         gc.collect()
@@ -376,29 +360,28 @@ must be above lower corner frequency."
         print(t)
         return()
 
-    def initialize_data(self, t0):
+    def initialize_data_new(self, t0):
         # t0: begin time of observation
-        # have at least one window in each channel
-        t_min = t0
+        # have at least one window in any channel
+        t_min = t0 + 3 * self.config(time_window_length)
+        
         self.data = Stream()
-
         for channel in self.channels:
-            ttemp = 0
-            while ttemp < t_min:
+            read_successfully = False
+            while not read_successfully:
                 f = self.inv[channel].pop(0)
-                m_and_ms = self.readtimes.pop(0)
-
                 try:
-                    self.data += read(f)
-                    ttemp = self.data[-1].stats.endtime
+                    tr = read(f)
+                    if tr[-1].stats.endtime > t_min:
+                        self.data += tr
+                        read_successfully = True
+                    else:
+                        pass
                 except IOError:
                     print('** problems reading file %s'
                           % self.inv.data[channel])
-
-        earliest_start_date = min([tr.stats.starttime for tr in self.data])
-        self.data.trim(max(t0, earliest_start_date))
         self.data._cleanup()
-        return(max(t0, earliest_start_date))
+        return()
 
     def get_prepstring(self):
 

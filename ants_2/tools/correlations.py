@@ -41,7 +41,7 @@ def deconv_waterlevel(trace1, trace2, sampling_rate=1.,
     out = ifft(f * fft(trace1, nfft) * spec_src_conj / spec_src_water)
     out = np.concatenate([out[-N//2:].copy(), out[:N//2].copy()])
 
-    return(np.real(out))
+    return(my_centered(np.real(out), 2 * max_lag_samples + 1))
 
 
 def running_mean(x, N):

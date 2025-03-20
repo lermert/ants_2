@@ -312,10 +312,11 @@ class correlation_inventory(object):
         for c in block.channels:
             print(c)
             rtimes.extend(self.readtimes[c])
+        
         block.inventory = deepcopy(inventory)
         block.readtimes = rtimes
         block.readtimes.sort()
-        print(block.readtimes)
+        # print(block.readtimes)
         # No channels are found if updating, and those pairs have already been computed.
         if block.channels != []: 
             self.blocks.append(block)
