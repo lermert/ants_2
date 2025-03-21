@@ -84,13 +84,15 @@ class CorrBlock(object):
             print("{}--{}".format(sta[0], sta[1]))
         
         t_end = UTCDateTime(self.cfg.time_end)
-        win_len_seconds = self.cfg.time_window_length
+        wl = self.cfg.time_window_length
         min_len_samples = int(round(self.cfg.time_min_window * self.sampling_rate))
         max_lag_samples = int(round(self.cfg.corr_maxlag * self.sampling_rate))
 
         # Time loop
         # running time:
         self.t = self.t0
+        update_time = self.t
+        self.updated_times = [self.t0]
 
         # mytracker = tracker.SummaryTracker()
         while self.t < t_end:
@@ -105,15 +107,16 @@ class CorrBlock(object):
             # slide
             # the offset is so that we stay on a fixed time stepping
             # obspy slide is untrustworthy and includes partial windows even if told not to
-            windows = self.data.slide(win_len_seconds - self.delta, win_len_seconds - self.cfg.time_overlap,
+            windows = self.data.slide(wl - self.delta, wl - self.cfg.time_overlap,
                                       offset=self.t - self.data[0].stats.starttime, include_partial_windows=True,
                                       nearest_sample=True)
-
+            possible_update_times = []
+            ixw = 0
             for w in windows:
-                w_starttime = w[0].stats.starttime
-                update_time = min([ww.stats.endtime for ww in w])
-
+                # ideal starttime, not what actually happens
+                w_starttime = self.t + ixw * (wl - self.cfg.time_overlap)
                 if np.all([ww.stats.starttime > t_end for ww in w]):
+                    self.t = t_end
                     break
 
                 # Apply preprocessing
@@ -121,6 +124,8 @@ class CorrBlock(object):
                 # may return a deepcopy if non-linear processing is applied.
                 # - station pair loop
                 # starttimes_corrwindows = []
+                print(w)
+
                 for sp_i, pair in enumerate(self.station_pairs):
 
                     # - select traces
@@ -129,9 +134,6 @@ class CorrBlock(object):
                     str1 = w.select(network=net1, station=sta1)
                     str2 = w.select(network=net2, station=sta2)
                      
-                    if 0 in [len(str1), len(str2)]:
-                        update_time = w_starttime
-
                     # - if horizontal components are involved, copy and rotate
                     if any([i in self.cfg.corr_tensorcomponents
                             for i in horizontals]):
@@ -159,7 +161,8 @@ class CorrBlock(object):
                             print(str2)
                             print(" channels needed: " + cha1 + "," + cha2,
                                   file=output_file)
-                            update_time = w_starttime
+                            print("no data in window")
+                            possible_update_times.append(w_starttime)
                             continue
 
                         # - check minimum length requirement
@@ -167,7 +170,8 @@ class CorrBlock(object):
                         traces_ok = self.perform_checks(tr1, tr2, output_file,
                                                         min_len_samples)
                         if not traces_ok:
-                            update_time = w_starttime
+                            print("found issue with one or both traces")
+                            possible_update_times.append(w_starttime)
                             continue
 
                         if self.cfg.corr_type == 'ccc':
@@ -197,27 +201,28 @@ class CorrBlock(object):
                         else:
                             print('Empty window.',
                                   file=output_file)
-                            update_time = w_starttime
+                            print("empty window")
+                            possible_update_times.append(w_starttime)
+                ixw += 1
 
-            
+            possible_update_times.append(w_starttime + wl - self.cfg.time_overlap)
             # update time
-            # if len(starttimes_corrwindows) == 0:
-            #     straggler = self.t + 1.0
-            # else:
-            #     straggler = min(starttimes_corrwindows)
-            while self.t < update_time:
-                self.t += self.cfg.time_window_length - self.cfg.time_overlap
-                    
-            self.update_data()
-
-            if len(self.data) == 0:
-                self.t += self.cfg.time_window_length - self.cfg.time_overlap
+            possible_update_times.sort()
+            update_time = next((ut for ut in possible_update_times if ut not in self.updated_times), None)
+            print("update time: ", update_time)
+            if update_time is None:
+                self.t = t_end
                 break
 
-            # check if there is a gap
-            while self.t < min([dd.stats.starttime for dd in self.data]):
-                self.t += self.cfg.time_window_length - self.cfg.time_overlap
-                print("jumping to t ", self.t)
+            result = self.update_data(update_time)
+            if not result:
+                self.t = t_end
+                break
+
+            # # check if there is a gap
+            # while self.t < min([dd.stats.starttime for dd in self.data]):
+            #     self.t += self.cfg.time_window_length - self.cfg.time_overlap
+            #     print("jumping to t ", self.t)
 
         # - Write results
         for corr in self._correlations.values():
@@ -330,7 +335,7 @@ class CorrBlock(object):
         return(s_temp1, s_temp2)
 
     # debugging @profile
-    def update_data(self):
+    def update_data(self, update_time):
         # mytracker = tracker.SummaryTracker()
         # mytracker.print_diff()
         # add a new round of data:
@@ -348,7 +353,7 @@ class CorrBlock(object):
                     try:
                         newd = read(f)
                         self.data += newd
-                        if newd[-1].stats.endtime > self.t + self.cfg.time_window_length * 3:
+                        if newd[-1].stats.endtime > update_time + self.cfg.time_window_length * 3:
                             break
                         
                     except IOError:
@@ -359,13 +364,17 @@ class CorrBlock(object):
                     break
 
         # merge. traces with too many zeros are kicked out during quality check
-        self.data.sort(keys=["station"])
-        self.data.merge(method=1, fill_value=0.0, interpolation_samples=0)        
-        self.data.sort(keys=["starttime"])
-        self.data.trim(starttime=self.t - self.cfg.time_window_length - 5 * self.delta, pad=True,
-            fill_value=0.0)
-        print("after updating ", self.t)
-        return()
+        if len(self.data) > 0:
+            self.data.sort(keys=["station"])
+            self.data.merge(method=1, fill_value=0.0, interpolation_samples=0)        
+            self.data.sort(keys=["starttime"])
+            self.data.trim(starttime=update_time - self.cfg.time_window_length * 0.5 * self.cfg.max_gap_percent_of_window,
+                pad=True, fill_value=0.0)
+            self.t = update_time
+            self.updated_times.append(update_time)
+            return True
+        else:
+            return False
 
     def initialize_data_new(self, t0):
         # t0: begin time of observation

@@ -226,7 +226,7 @@ class CorrTrace(object):
                 self.pstak = None
                 return(False)
 
-        if tstmp not in self.data_keys:
+        if np.abs(tstmp - self.data_keys[-1]) > wl / 3.:
             try:
                 self.interm_data[self.ix_d, :] = self.pstak
                 self.data_keys[self.ix_d] = tstmp
