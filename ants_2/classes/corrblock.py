@@ -85,7 +85,7 @@ class CorrBlock(object):
         
         t_end = UTCDateTime(self.cfg.time_end)
         wl = self.cfg.time_window_length
-        min_len_samples = int(round(self.cfg.time_min_window * self.sampling_rate))
+        min_len_samples = int(self.cfg.time_min_window * self.sampling_rate)
         max_lag_samples = int(round(self.cfg.corr_maxlag * self.sampling_rate))
 
         # Time loop
