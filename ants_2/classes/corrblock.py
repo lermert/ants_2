@@ -108,7 +108,8 @@ class CorrBlock(object):
             # the offset is so that we stay on a fixed time stepping
             # obspy slide is untrustworthy and includes partial windows even if told not to
             windows = self.data.slide(wl - self.delta, wl - self.cfg.time_overlap,
-                                      offset=self.t - self.data[0].stats.starttime, include_partial_windows=True,
+                                      offset=self.t - self.data[0].stats.starttime,
+                                      include_partial_windows=True,
                                       nearest_sample=True)
             possible_update_times = []
             ixw = 0
