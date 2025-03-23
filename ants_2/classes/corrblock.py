@@ -85,7 +85,7 @@ class CorrBlock(object):
         
         t_end = UTCDateTime(self.cfg.time_end)
         wl = self.cfg.time_window_length
-        min_len_samples = int(self.cfg.time_min_window * self.sampling_rate)
+        min_len_samples = int(self.cfg.time_min_window * self.sampling_rate - self.delta / 2.)
         max_lag_samples = int(round(self.cfg.corr_maxlag * self.sampling_rate))
 
         # Time loop
@@ -157,12 +157,12 @@ class CorrBlock(object):
                             tr1 = str1.select(location=loc1, channel=cha1)[0]
                             tr2 = str2.select(location=loc2, channel=cha2)[0]
                         except IndexError:
-                            print("Channel not found, current streams: ", file=output_file)
-                            print(str1)
-                            print(str2)
-                            print(" channels needed: " + cha1 + "," + cha2,
-                                  file=output_file)
-                            print("no data in window")
+                            # print("Channel not found, current streams: ", file=output_file)
+                            # print(str1)
+                            # print(str2)
+                            # print(" channels needed: " + cha1 + "," + cha2,
+                            #      file=output_file)
+                            print("no data in window for at least one trace")
                             possible_update_times.append(w_starttime)
                             continue
 
@@ -171,8 +171,8 @@ class CorrBlock(object):
                         traces_ok = self.perform_checks(tr1, tr2, output_file,
                                                         min_len_samples)
                         if not traces_ok:
-                            print("found issue with one or both traces")
-                            possible_update_times.append(w_starttime)
+                            # print("found issue with one or both traces")
+                            # possible_update_times.append(w_starttime)
                             continue
 
                         if self.cfg.corr_type == 'ccc':
@@ -203,19 +203,20 @@ class CorrBlock(object):
                             print('Empty window.',
                                   file=output_file)
                             print("empty window")
-                            possible_update_times.append(w_starttime)
+                            # possible_update_times.append(w_starttime)
                 ixw += 1
 
-            possible_update_times.append(w_starttime + wl - self.cfg.time_overlap)
+            # possible_update_times.append(w_starttime + wl - self.cfg.time_overlap)
             # update time
-            possible_update_times.sort()
-            update_time = next((ut for ut in possible_update_times if ut not in self.updated_times), None)
-            print("update time: ", update_time)
-            if update_time is None:
-                self.t = t_end
-                break
+            # possible_update_times.sort()
+            # update_time = next((ut for ut in possible_update_times if ut not in self.updated_times), None)
+            # print("update time: ", update_time)
+            # if update_time is None:
+            #    self.t = t_end
+            #    break
 
-            result = self.update_data(update_time)
+            update_time = self.t + ixw * (wl - self.cfg.time_overlap)
+            result = self.update_data_and_time(update_time)
             if not result:
                 self.t = t_end
                 break
@@ -373,6 +374,44 @@ class CorrBlock(object):
                 pad=True, fill_value=0.0)
             self.t = update_time
             self.updated_times.append(update_time)
+            return True
+        else:
+            return False
+
+
+    def update_data_and_time(self, update_time):
+        wl = self.cfg.time_window_length
+        for ix_c, channel in enumerate(self.channels):
+            while True:
+                try:
+                    f = self.inv[channel].pop(0)
+                    try:
+                        newd = read(f)
+                        self.data += newd
+
+                        while newd[0].stats.starttime < update_time:
+                            update_time -= (wl - self.cfg.time_overlap)
+                        if update_time < self.t:
+                            print("rolling back to ")
+                            print(update_time)
+                        if newd[-1].stats.endtime > update_time + self.cfg.time_window_length * 3:
+                            break
+                        
+                    except IOError:
+                        print("** Could not read trace: %s" % f)
+
+                except IndexError:
+                    # No more data.
+                    break
+
+        # merge. traces with too many zeros are kicked out during quality check
+        if len(self.data) > 0:
+            self.data.sort(keys=["station"])
+            self.data.merge(method=1, fill_value=0.0, interpolation_samples=0)        
+            self.data.sort(keys=["starttime"])
+            self.data.trim(starttime=update_time, pad=True, fill_value=0.0)
+            self.t = update_time
+            # self.updated_times.append(update_time)
             return True
         else:
             return False
